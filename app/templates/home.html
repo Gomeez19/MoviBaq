@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            transmetro: { DEFAULT: '#0252CD', dark: '#003B99', light: '#2575FC', soft: '#F0F5FF' },
+            baq: { yellow: '#FACC15', red: '#DC2626', green: '#059669', dark: '#0F172A' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="min-h-full flex flex-col bg-slate-50 text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-transmetro selection:text-white">
+
+  <!-- Franja Tricolor Barranquilla -->
+  <div class="h-1.5 w-full flex-shrink-0 flex sticky top-0 z-50">
+    <div class="h-full w-1/3 bg-baq-red"></div>
+    <div class="h-full w-1/3 bg-baq-yellow"></div>
+    <div class="h-full w-1/3 bg-baq-green"></div>
+  </div>
+
+  <!-- Header Superior -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-1.5 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-700 via-transmetro to-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+          <i class="fa-solid fa-bus text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl font-black tracking-tight text-slate-900">Movi<span class="text-transmetro">BAQ</span></span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Oficial
+            </span>
+          </div>
+          <p class="text-xs font-semibold text-slate-400">Sistema Inteligente de Transporte • Distrito de Barranquilla</p>
+        </div>
+      </a>
+
+      <!-- Botones de Navegación / Autenticación -->
+      <nav class="flex items-center gap-3">
+        {% if user %}
+          <div class="flex items-center gap-3 bg-slate-100/80 p-1.5 pl-3 rounded-2xl border border-slate-200">
+            <div class="text-right hidden sm:block">
+              <p class="text-xs font-bold text-slate-800">{{ user.fullname }}</p>
+              <span class="text-[10px] uppercase font-extrabold text-transmetro tracking-wider">{{ user.role }}</span>
+            </div>
+            <a href="/mapa" class="px-3 py-2 bg-transmetro hover:bg-transmetro-dark text-white rounded-xl text-xs font-bold shadow-md shadow-transmetro/20 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-map-location-dot"></i>
+              <span>Abrir Mapa en Vivo</span>
+            </a>
+            {% if user.role == 'conductor' %}
+              <a href="/conductor" class="p-2 text-transmetro hover:bg-blue-100 rounded-xl" title="Cabina Conductor"><i class="fa-solid fa-id-card-clip"></i></a>
+            {% elif user.role == 'jefe_ruta' %}
+              <a href="/jefe-ruta" class="p-2 text-amber-700 hover:bg-amber-100 rounded-xl" title="CCO"><i class="fa-solid fa-tower-broadcast"></i></a>
+            {% elif user.role == 'admin' %}
+              <a href="/admin" class="p-2 text-purple-700 hover:bg-purple-100 rounded-xl" title="Admin"><i class="fa-solid fa-screwdriver-wrench"></i></a>
+            {% endif %}
+            <button onclick="handleLogout()" class="p-2 text-slate-400 hover:text-red-600 rounded-xl" title="Cerrar Sesión">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        {% else %}
+          <a href="/login" class="inline-flex items-center gap-2 px-5 py-2.5 bg-transmetro hover:bg-transmetro-dark text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-transmetro/25 transition-all hover:scale-[1.02]">
+            <i class="fa-regular fa-user"></i>
+            <span>Iniciar Sesión / Registro</span>
+          </a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL: LANDING INSTITUCIONAL Y MODERNA -->
+  <main class="flex-grow">
+    
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden bg-gradient-to-b from-blue-900 via-slate-900 to-slate-950 text-white py-20 lg:py-28">
+      <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-baq-yellow mb-6">
+          <i class="fa-solid fa-satellite-dish"></i>
+          <span>Monitoreo GPS en Tiempo Real de Alimentadores y Troncales</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight sm:leading-none">
+          Muévete inteligente por <span class="bg-gradient-to-r from-blue-400 via-baq-yellow to-emerald-400 bg-clip-text text-transparent">Barranquilla y Soledad</span>
+        </h1>
+
+        <p class="mt-6 text-base sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal">
+          Planifica tu viaje, consulta el tiempo de llegada (ETA) con telemetría exacta y accede a una plataforma unificada para pasajeros, conductores y centro de control.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          {% if user %}
+            <a href="/mapa" class="w-full sm:w-auto px-8 py-4 bg-transmetro hover:bg-blue-600 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 text-base transition-all hover:scale-105">
+              <i class="fa-solid fa-map-location-dot"></i>
+              <span>Ver Mapa Satelital en Vivo</span>
+            </a>
+          {% else %}
+            <a href="/login" class="w-full sm:w-auto px-8 py-4 bg-transmetro hover:bg-blue-600 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 text-base transition-all hover:scale-105">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i>
+              <span>Ingresar para Ver el Mapa</span>
+            </a>
+          {% endif %}
+          <a href="#features" class="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl border border-white/20 backdrop-blur-md flex items-center justify-center gap-2 text-base transition">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Conoce los Servicios</span>
+          </a>
+        </div>
+
+        <!-- Métricas Rápidas -->
+        <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8 border-t border-white/10">
+          <div class="p-4 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <p class="text-3xl font-black text-baq-yellow">100%</p>
+            <p class="text-xs text-slate-300 mt-1 font-medium">Flota Monitoreada</p>
+          </div>
+          <div class="p-4 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <p class="text-3xl font-black text-emerald-400">7 min</p>
+            <p class="text-xs text-slate-300 mt-1 font-medium">Intervalo de Despacho</p>
+          </div>
+          <div class="p-4 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <p class="text-3xl font-black text-blue-400">24/7</p>
+            <p class="text-xs text-slate-300 mt-1 font-medium">Regulación CCO</p>
+          </div>
+          <div class="p-4 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <p class="text-3xl font-black text-rose-400">Seguridad</p>
+            <p class="text-xs text-slate-300 mt-1 font-medium">Inspección Digital</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Sección de Roles & Funcionalidades -->
+    <section id="features" class="py-20 bg-slate-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <span class="text-xs font-extrabold uppercase tracking-widest text-transmetro bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+            Ecosistema de Movilidad
+          </span>
+          <h2 class="text-3xl font-extrabold text-slate-900 mt-4 tracking-tight">
+            Plataforma diseñada para cada actor del transporte
+          </h2>
+          <p class="text-slate-500 mt-3 text-base">
+            MoviBAQ conecta al usuario en el paradero con la cabina del conductor y la mesa de control de tráfico distrital.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- Card 1: Pasajero -->
+          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-blue-50 text-transmetro flex items-center justify-center text-xl font-bold group-hover:bg-transmetro group-hover:text-white transition">
+                <i class="fa-solid fa-person-walking-luggage"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900 mt-4">Ciudadanos y Pasajeros</h3>
+              <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                Visualiza el recorrido satelital, conoce el tiempo estimado de arribo (ETA), paraderos cercanos y nivel de ocupación en cada bus.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-transmetro">
+              <span>Vista de Mapa Satelital</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Card 2: Conductor -->
+          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl font-bold group-hover:bg-amber-600 group-hover:text-white transition">
+                <i class="fa-solid fa-id-card-clip"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900 mt-4">Cabina de Conductor</h3>
+              <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                Nueva cabina modular responsive: control de turno, transmisión GPS, chequeo preoperacional en 5 fases y reporte inmediato de incidentes en vía.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-700">
+              <span>Módulo Modular Responsive</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Card 3: Jefe de Ruta CCO -->
+          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-baq-green flex items-center justify-center text-xl font-bold group-hover:bg-baq-green group-hover:text-white transition">
+                <i class="fa-solid fa-tower-broadcast"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900 mt-4">Jefe de Ruta (CCO)</h3>
+              <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                Centro de Operaciones con telemetría en vivo de toda la flota, envío de directrices por radio digital y gestión de novedades mecánicas o bloqueos.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-baq-green">
+              <span>Despacho y Regulación</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Card 4: Administrador -->
+          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl font-bold group-hover:bg-purple-600 group-hover:text-white transition">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900 mt-4">Gestión Distrital</h3>
+              <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                Administración integral de flota vehicular, asignación de padrones, gestión de usuarios, roles RBAC y auditoría de seguridad del servicio.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-purple-700">
+              <span>Control y Auditoría RBAC</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Banner Acceso Seguro -->
+    <section class="bg-white border-y border-slate-200 py-16">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-700 via-transmetro to-blue-800 rounded-3xl p-8 sm:p-12 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
+        <div>
+          <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider">Acceso Protegido</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold mt-2">¿Listo para monitorear tu viaje?</h2>
+          <p class="text-blue-100 text-sm mt-2 max-w-xl">
+            Inicia sesión con tu correo institucional o personal para acceder al mapa en tiempo real, consultar frecuencias y calcular tiempos de llegada.
+          </p>
+        </div>
+        <div class="flex-shrink-0">
+          <a href="/login" class="px-8 py-3.5 bg-baq-yellow text-slate-900 font-extrabold rounded-2xl text-sm shadow-lg hover:bg-yellow-400 transition hover:scale-105 inline-flex items-center gap-2">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span>Acceder al Portal</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PIE DE PÁGINA INSTITUCIONAL UNIFICADO -->
+  <footer class="bg-slate-900 text-slate-400 text-xs border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+        
+        <!-- Info Marca -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-transmetro flex items-center justify-center text-white font-bold">
+              <i class="fa-solid fa-bus text-xs"></i>
+            </div>
+            <span class="text-lg font-black text-white">Movi<span class="text-transmetro">BAQ</span></span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Plataforma oficial de seguimiento en tiempo real y telemetría de Transmetro. Alcaldía Distrital de Barranquilla.
+          </p>
+          <div class="flex items-center gap-2 pt-2 text-slate-500">
+            <i class="fa-solid fa-shield-halved text-emerald-500"></i>
+            <span class="text-[10px]">Conexión Cifrada SSL & RBAC v2.0</span>
+          </div>
+        </div>
+
+        <!-- Enlaces Rápidos -->
+        <div>
+          <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-3">Navegación</h4>
+          <ul class="space-y-2 text-[11px]">
+            <li><a href="/" class="hover:text-white transition">Inicio</a></li>
+            <li><a href="/mapa" class="hover:text-white transition">Mapa en Vivo (Pasajero)</a></li>
+            <li><a href="/login" class="hover:text-white transition">Portal de Conexión Unificado</a></li>
+            <li><a href="/conductor" class="hover:text-white transition">Cabina de Conductor</a></li>
+          </ul>
+        </div>
+
+        <!-- Módulos Operativos -->
+        <div>
+          <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-3">Módulos Especiales</h4>
+          <ul class="space-y-2 text-[11px]">
+            <li><a href="/jefe-ruta" class="hover:text-white transition">Centro de Control (CCO)</a></li>
+            <li><a href="/admin" class="hover:text-white transition">Consola de Administración Distrital</a></li>
+            <li><span class="text-slate-500">Base de Datos PostgreSQL (Neon)</span></li>
+            <li><span class="text-slate-500">Inspecciones Preoperacionales</span></li>
+          </ul>
+        </div>
+
+        <!-- Contacto Distrital -->
+        <div>
+          <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-3">Distrito de Barranquilla</h4>
+          <p class="text-[11px] leading-relaxed">
+            Secretaría Distrital de Tránsito y Seguridad Vial<br>
+            Línea de Atención Transmetro: 320 000 0000<br>
+            Barranquilla, Atlántico - Colombia
+          </p>
+          <div class="mt-3 flex items-center gap-3 text-slate-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-baq-red"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-baq-yellow"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-baq-green"></span>
+            <span class="text-[10px] text-slate-400 font-mono">Barranquilla Imparable</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-3">
+        <p>© 2026 MoviBAQ - Sistema de Transporte Masivo Transmetro. Todos los derechos reservados.</p>
+        <p class="font-mono text-[10px]">Alcaldía de Barranquilla • Powered by FastAPI & Neon Postgres</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    async function handleLogout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.reload();
+    }
+  </script>
+</body>
+</html>

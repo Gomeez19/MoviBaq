@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{ title }}</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            transmetro: {
+              DEFAULT: '#0252CD',
+              dark: '#003B99',
+              light: '#2575FC',
+              soft: '#F0F5FF'
+            },
+            baq: {
+              yellow: '#FACC15',
+              red: '#DC2626',
+              green: '#059669',
+              dark: '#0B132B'
+            }
+          },
+          boxShadow: {
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.12)',
+            'float': '0 12px 30px -4px rgba(2, 82, 205, 0.25)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- Google Font & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body class="h-full flex flex-col bg-slate-50 text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] antialiased overflow-hidden selection:bg-transmetro selection:text-white" style="height:100vh;height:100dvh;">
+
+  <!-- Franja Tricolor Institucional Barranquilla -->
+  <div class="h-1.5 w-full flex-shrink-0 flex z-50 shadow-sm">
+    <div class="h-full w-1/3 bg-baq-red"></div>
+    <div class="h-full w-1/3 bg-baq-yellow"></div>
+    <div class="h-full w-1/3 bg-baq-green"></div>
+  </div>
+
+  <!-- Navbar Superior Vidriado / Glassmorphism -->
+  <header class="h-16 flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 z-40 flex items-center justify-between">
+    
+    <!-- Logo & Marca -->
+    <div class="flex items-center gap-2.5">
+      <a href="/" class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 via-transmetro to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25 flex-shrink-0">
+        <i class="fa-solid fa-bus-simple text-base"></i>
+      </a>
+      <div>
+        <div class="flex items-center gap-2">
+          <a href="/" class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">Movi<span class="text-transmetro">BAQ</span></a>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+            En Vivo
+          </span>
+        </div>
+        <p class="text-[10px] sm:text-[11px] font-semibold text-slate-400 hidden sm:block">Transmetro • Distrito de Barranquilla</p>
+      </div>
+    </div>
+
+    <!-- Controles Header & Perfil -->
+    <div class="flex items-center gap-2">
+      <!-- Selector Rápido de Rutas (Desktop) -->
+      <div class="hidden md:flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <i class="fa-solid fa-route text-slate-400 pl-2 text-xs"></i>
+        <select id="navbar-route-selector" onchange="onSelectRoute(this.value)" class="bg-transparent text-xs font-bold text-slate-700 py-1 pr-3 focus:outline-none cursor-pointer">
+          <!-- Cargado por JS -->
+        </select>
+      </div>
+
+      <!-- Botón móvil para mostrar/ocultar Panel de Información -->
+      <button onclick="toggleMobilePanel()" id="btn-toggle-panel" class="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-transmetro text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition">
+        <i class="fa-solid fa-layer-group text-xs" id="btn-panel-icon"></i>
+        <span id="btn-panel-txt">Ver Bus</span>
+      </button>
+
+      {% if user %}
+      <div class="flex items-center gap-1.5 bg-white pl-2 pr-1 py-1 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="text-right hidden sm:block leading-tight pr-1">
+          <p class="text-xs font-bold text-slate-800">{{ user.fullname.split(' ')[0] }}</p>
+          <span class="text-[9px] uppercase font-extrabold tracking-wider px-1.5 py-0.2 rounded text-transmetro bg-blue-50">{{ user.role }}</span>
+        </div>
+        {% if user.role == 'conductor' %}
+        <a href="/conductor" class="p-2 rounded-xl text-xs font-bold bg-blue-50 text-transmetro hover:bg-transmetro hover:text-white transition" title="Ir a Cabina">
+          <i class="fa-solid fa-id-card-clip"></i>
+        </a>
+        {% elif user.role == 'jefe_ruta' %}
+        <a href="/jefe-ruta" class="p-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white transition" title="Ir a CCO">
+          <i class="fa-solid fa-tower-broadcast"></i>
+        </a>
+        {% elif user.role == 'admin' %}
+        <a href="/admin" class="p-2 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition" title="Ir a Admin">
+          <i class="fa-solid fa-screwdriver-wrench"></i>
+        </a>
+        {% endif %}
+        <button onclick="handleLogout()" class="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition" title="Cerrar Sesión">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+      {% else %}
+      <a href="/login" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-transmetro hover:bg-transmetro-dark text-white text-xs font-bold rounded-xl shadow-md transition">
+        <i class="fa-regular fa-user"></i>
+        <span>Acceder</span>
+      </a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Área de Trabajo Principal: Mapa 100% visible con panel flotante responsive -->
+  <main class="relative flex-grow w-full overflow-hidden" style="flex:1 1 0%;min-height:0;">
+    
+    <!-- MAPA LEAFLET A PANTALLA COMPLETA (Visible tanto en móviles como en PC) -->
+    <div id="map" class="absolute inset-0 z-0" style="height:100%;width:100%;"></div>
+
+    <!-- PANEL FLOTANTE LATERAL (En Móvil: Bottom sheet deslizable / En Desktop: Tarjeta lateral flotante) -->
+    <div id="info-drawer" class="absolute bottom-0 left-0 right-0 sm:right-auto sm:top-4 sm:left-4 sm:bottom-4 z-20 w-full sm:max-w-[420px] max-h-[70vh] sm:max-h-none flex flex-col pointer-events-none transition-transform duration-300 ease-out transform translate-y-full sm:translate-y-0">
+      
+      <!-- Tirador táctil para móviles -->
+      <div class="sm:hidden w-full flex justify-center py-2 pointer-events-auto" onclick="toggleMobilePanel()">
+        <span class="w-12 h-1.5 rounded-full bg-slate-400/80 shadow"></span>
+      </div>
+
+      <div class="bg-white/95 sm:backdrop-blur-md rounded-t-3xl sm:rounded-3xl shadow-2xl sm:shadow-glass border border-slate-200/80 sm:border-white/80 p-4 sm:p-5 flex flex-col h-full pointer-events-auto overflow-hidden">
+        
+        <!-- Header del Panel: Ruta y Estado -->
+        <div class="flex-shrink-0">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-location-arrow text-transmetro"></i>
+              <span>Ruta Seleccionada</span>
+            </span>
+            <div class="flex items-center gap-2">
+              <button onclick="fetchLiveBuses()" class="text-xs text-transmetro font-bold hover:underline flex items-center gap-1">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span class="hidden sm:inline">Refrescar</span>
+              </button>
+              <button onclick="toggleMobilePanel()" class="sm:hidden p-1 text-slate-400 hover:text-slate-700">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector en el Panel -->
+          <div class="relative mb-3">
+            <select id="route-selector" onchange="onSelectRoute(this.value)" class="w-full pl-10 pr-9 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-2xl text-xs font-extrabold text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-transmetro/20 focus:border-transmetro transition cursor-pointer">
+              <!-- Cargado dinámicamente -->
+            </select>
+            <i class="fa-solid fa-bus text-transmetro absolute left-3.5 top-3.5 text-xs pointer-events-none"></i>
+            <i class="fa-solid fa-chevron-down text-slate-400 absolute right-3.5 top-3.5 text-xs pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- HERO CARD: TIEMPO ESTIMADO DE LLEGADA (ETA) -->
+        <div class="flex-shrink-0 bg-gradient-to-br from-blue-700 via-transmetro to-blue-900 rounded-2xl p-3.5 sm:p-4 text-white shadow-float relative overflow-hidden mb-3">
+          <div class="absolute -right-4 -bottom-6 opacity-10 text-8xl pointer-events-none">
+            <i class="fa-solid fa-bus"></i>
+          </div>
+
+          <div class="flex items-center justify-between mb-1.5">
+            <span id="live-badge-status" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] sm:text-[11px] font-semibold text-white border border-white/20">
+              <span class="w-2 h-2 rounded-full bg-baq-yellow animate-ping"></span>
+              <span id="bus-status-txt">Localizando bus...</span>
+            </span>
+            <span id="bus-speed-badge" class="text-xs font-mono font-bold text-blue-200">
+              -- km/h
+            </span>
+          </div>
+
+          <div class="flex items-baseline justify-between mt-1">
+            <div>
+              <p class="text-[10px] text-blue-200 uppercase tracking-wider font-bold">Tiempo Estimado (ETA)</p>
+              <div class="flex items-baseline gap-1 mt-0.5">
+                <span id="eta-minutes" class="text-3xl sm:text-4xl font-black tracking-tight">--</span>
+                <span class="text-xs font-bold text-blue-200">minutos</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] text-blue-200 uppercase tracking-wider font-bold">Distancia</p>
+              <p id="eta-distance" class="text-base sm:text-lg font-extrabold mt-0.5">-- metros</p>
+            </div>
+          </div>
+
+          <!-- Ocupación y Próxima Parada -->
+          <div class="mt-2.5 pt-2.5 border-t border-white/10 flex flex-col gap-1">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-blue-100 font-medium" id="bus-plate-txt">Placa: WPL-000</span>
+              <span class="text-blue-100 font-bold" id="bus-occupancy-txt">Ocupación: --%</span>
+            </div>
+            <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+              <div id="occupancy-bar" class="bg-baq-yellow h-full rounded-full transition-all duration-500" style="width: 50%"></div>
+            </div>
+            <p class="text-[11px] text-blue-100 flex items-center gap-1.5 mt-0.5 truncate">
+              <i class="fa-solid fa-location-dot text-baq-yellow flex-shrink-0"></i>
+              <span class="truncate">Próxima Parada: <strong id="next-stop-txt" class="underline decoration-baq-yellow">Portal de Soledad</strong></span>
+            </p>
+          </div>
+        </div>
+
+        <!-- LISTA DE PARADEROS CON SCROLL SUAVE -->
+        <div id="stops-wrapper" class="flex-shrink flex flex-col min-h-0 bg-slate-50/80 rounded-2xl border border-slate-200/60 p-2.5 sm:p-3 max-h-28 sm:max-h-48 overflow-hidden">
+          <div class="flex items-center justify-between mb-2 px-1 flex-shrink-0">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <i class="fa-solid fa-signs-post text-transmetro"></i>
+              <span>Paraderos Oficiales</span>
+            </h3>
+            <span id="stops-counter" class="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200">0 paradas</span>
+          </div>
+
+          <div id="stops-list-container" class="space-y-1.5 overflow-y-auto pr-1 flex-grow">
+            <!-- Render dinámico de paraderos -->
+          </div>
+        </div>
+
+        <!-- Footer del Panel: Botones de Acción Rápida -->
+        <div class="flex-shrink-0 grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-slate-100">
+          <button onclick="centerMapOnBuses()" class="py-2.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+            <i class="fa-solid fa-crosshairs text-transmetro"></i>
+            <span>Centrar Bus</span>
+          </button>
+          <button onclick="toggleUserLocation()" class="py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+            <i class="fa-solid fa-location-crosshairs text-emerald-600"></i>
+            <span>Mi Ubicación</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Leyenda Flotante en la esquina inferior derecha (Desktop) -->
+    <div class="hidden md:flex absolute bottom-4 right-4 z-20 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-glass border border-slate-200/80 items-center gap-4 text-xs font-semibold text-slate-600">
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-3 h-3 rounded-full bg-transmetro border-2 border-white shadow"></span>
+        Bus en Vivo
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+        Paradero
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 border border-white"></span>
+        Tu Posición
+      </span>
+    </div>
+
+    <!-- PIE DE PÁGINA INFERIOR DISCRETO PARA MAPA EN PANTALLA COMPLETA -->
+    <div class="hidden sm:flex absolute bottom-2 right-64 z-20 bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/60 text-white items-center gap-3 text-[11px] shadow-lg">
+      <span class="flex items-center gap-1.5 font-bold text-slate-200">
+        <i class="fa-solid fa-bus text-transmetro"></i>
+        <span>MoviBAQ Mapa en Vivo</span>
+      </span>
+      <span class="text-slate-500">|</span>
+      <a href="/" class="text-baq-yellow hover:underline flex items-center gap-1 font-semibold">
+        <i class="fa-solid fa-house text-[10px]"></i>
+        <span>Página Principal</span>
+      </a>
+      <span class="text-slate-500">|</span>
+      <span class="text-slate-400 text-[10px]">© 2026 Alcaldía de Barranquilla</span>
+    </div>
+
+  </main>
+
+  <!-- JavaScript vanilla para Leaflet y actualización en tiempo real -->
+  <script>
+    let map = null;
+    let routePolyline = null;
+    let stopMarkers = [];
+    let busMarkers = {};
+    let userMarker = null;
+    let currentRouteId = "A3-2";
+    let telemetryInterval = null;
+    let isMobilePanelOpen = false;
+
+    function toggleMobilePanel() {
+      const drawer = document.getElementById('info-drawer');
+      const icon = document.getElementById('btn-panel-icon');
+      const txt = document.getElementById('btn-panel-txt');
+
+      if (drawer.classList.contains('translate-y-full')) {
+        drawer.classList.remove('translate-y-full');
+        icon.className = 'fa-solid fa-xmark text-xs';
+        txt.textContent = 'Ocultar';
+        isMobilePanelOpen = true;
+      } else {
+        drawer.classList.add('translate-y-full');
+        icon.className = 'fa-solid fa-layer-group text-xs';
+        txt.textContent = 'Ver Bus';
+        isMobilePanelOpen = false;
+      }
+      setTimeout(() => { if (map) map.invalidateSize(); }, 350);
+    }
+
+    function initMap() {
+      map = L.map('map', {
+        zoomControl: false
+      }).setView([10.9400, -74.7850], 13);
+
+      // Posicionar zoom controls abajo a la derecha
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      // Capa base limpia de OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap | Alcaldía de Barranquilla',
+        maxZoom: 18
+      }).addTo(map);
+
+      // InvalidateSize para garantizar renderizado correcto en cualquier resolución móvil
+      setTimeout(() => { map.invalidateSize(); }, 200);
+      window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
+      window.addEventListener('orientationchange', () => { setTimeout(() => { if (map) map.invalidateSize(); }, 300); });
+    }
+
+    function createBusIcon(color = "#0252CD") {
+      return L.divIcon({
+        className: 'custom-bus-icon',
+        html: `
+          <div class="relative flex items-center justify-center">
+            <div class="w-10 h-10 rounded-2xl bg-transmetro text-white shadow-xl flex items-center justify-center border-2 border-white bus-marker-pulse">
+              <i class="fa-solid fa-bus text-sm"></i>
+            </div>
+          </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -22]
+      });
+    }
+
+    function createStopIcon(order) {
+      return L.divIcon({
+        className: 'custom-stop-icon',
+        html: `
+          <div class="w-6 h-6 rounded-full bg-slate-900 border-2 border-white shadow-md text-white text-[10px] font-black flex items-center justify-center">
+            ${order}
+          </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+    }
+
+    async function loadRoutesList() {
+      try {
+        const response = await fetch('/api/transmetro/routes');
+        const json = await response.json();
+        const routes = Array.isArray(json) ? json : (json.data || []);
+        
+        const mainSelector = document.getElementById('route-selector');
+        const navbarSelector = document.getElementById('navbar-route-selector');
+        mainSelector.innerHTML = '';
+        navbarSelector.innerHTML = '';
+
+        routes.forEach((r, idx) => {
+          const opt1 = document.createElement('option');
+          opt1.value = r.id;
+          opt1.textContent = `${r.code} - ${r.name}`;
+          mainSelector.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = r.id;
+          opt2.textContent = `${r.code} - ${r.name}`;
+          navbarSelector.appendChild(opt2);
+        });
+
+        if (routes.length > 0) {
+          currentRouteId = routes[0].id;
+          mainSelector.value = currentRouteId;
+          navbarSelector.value = currentRouteId;
+          loadRouteDetails(currentRouteId);
+        }
+      } catch (err) {
+        console.error("Error al cargar rutas:", err);
+      }
+    }
+
+    async function onSelectRoute(routeId) {
+      currentRouteId = routeId;
+      document.getElementById('route-selector').value = routeId;
+      document.getElementById('navbar-route-selector').value = routeId;
+      await loadRouteDetails(routeId);
+      await fetchLiveBuses();
+    }
+
+    async function loadRouteDetails(routeId) {
+      try {
+        const response = await fetch(`/api/transmetro/routes/${routeId}`);
+        const data = await response.json();
+
+        // 1. Trazar recorrido en el mapa siguiendo las vías exactas
+        if (routePolyline) {
+          map.removeLayer(routePolyline);
+        }
+        if (window.routePolylineBorder) {
+          map.removeLayer(window.routePolylineBorder);
+        }
+
+        // Borde exterior blanco para resaltar sobre el mapa vial
+        window.routePolylineBorder = L.polyline(data.path, {
+          color: '#FFFFFF',
+          weight: 8,
+          opacity: 0.9,
+          lineJoin: 'round',
+          lineCap: 'round'
+        }).addTo(map);
+
+        routePolyline = L.polyline(data.path, {
+          color: data.color || '#0252CD',
+          weight: 5,
+          opacity: 0.95,
+          lineJoin: 'round',
+          lineCap: 'round'
+        }).addTo(map);
+
+        map.fitBounds(routePolyline.getBounds(), { padding: [50, 50] });
+
+        // 2. Paraderos
+        stopMarkers.forEach(m => map.removeLayer(m));
+        stopMarkers = [];
+        const stopsListContainer = document.getElementById('stops-list-container');
+        stopsListContainer.innerHTML = '';
+        document.getElementById('stops-counter').textContent = `${data.stops.length} paradas`;
+
+        data.stops.forEach(stop => {
+          const marker = L.marker([stop.lat, stop.lng], {
+            icon: createStopIcon(stop.order)
+          }).addTo(map);
+
+          marker.bindPopup(`
+            <div class="text-xs p-1">
+              <span class="font-extrabold text-transmetro">Parada #${stop.order}</span>
+              <p class="font-bold text-slate-800 mt-0.5">${stop.name}</p>
+            </div>
+          `);
+          stopMarkers.push(marker);
+
+          // Card en la lista lateral
+          const stopItem = document.createElement('div');
+          stopItem.className = "p-2 bg-white rounded-xl border border-slate-100 flex items-center justify-between hover:border-transmetro transition cursor-pointer";
+          stopItem.onclick = () => {
+            map.flyTo([stop.lat, stop.lng], 16);
+            marker.openPopup();
+          };
+          stopItem.innerHTML = `
+            <div class="flex items-center gap-2 truncate">
+              <span class="w-5 h-5 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-extrabold flex items-center justify-center border border-slate-200">
+                ${stop.order}
+              </span>
+              <span class="text-xs font-semibold text-slate-700 truncate">${stop.name}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+          `;
+          stopsListContainer.appendChild(stopItem);
+        });
+
+      } catch (err) {
+        console.error("Error al cargar detalles de ruta:", err);
+      }
+    }
+
+    async function fetchLiveBuses() {
+      try {
+        const response = await fetch(`/api/transmetro/buses/live?route_id=${currentRouteId}`);
+        const buses = await response.json();
+
+        if (buses.length > 0) {
+          const primaryBus = buses[0];
+
+          document.getElementById('eta-minutes').textContent = primaryBus.eta_minutes;
+          document.getElementById('eta-distance').textContent = `${primaryBus.distance_meters} m`;
+          document.getElementById('bus-status-txt').textContent = primaryBus.status;
+          document.getElementById('bus-speed-badge').textContent = `${primaryBus.speed_kmh} km/h`;
+          document.getElementById('bus-plate-txt').textContent = `Bus: ${primaryBus.bus_id} (${primaryBus.plate})`;
+          document.getElementById('bus-occupancy-txt').textContent = `Ocupación: ${primaryBus.occupancy_percent}%`;
+          document.getElementById('next-stop-txt').textContent = primaryBus.next_stop_name;
+          document.getElementById('occupancy-bar').style.width = `${primaryBus.occupancy_percent}%`;
+
+          // Actualizar marcadores de buses en Leaflet
+          buses.forEach(b => {
+            if (!busMarkers[b.bus_id]) {
+              const m = L.marker([b.current_lat, b.current_lng], {
+                icon: createBusIcon()
+              }).addTo(map);
+
+              m.bindPopup(`
+                <div class="p-1 text-xs">
+                  <div class="flex items-center gap-1.5 font-black text-transmetro">
+                    <i class="fa-solid fa-bus"></i>
+                    <span>${b.bus_id} • ${b.plate}</span>
+                  </div>
+                  <p class="text-slate-600 mt-1 font-medium">Conductor: ${b.driver_name}</p>
+                  <p class="text-slate-600 font-medium">Velocidad: <strong>${b.speed_kmh} km/h</strong></p>
+                  <p class="text-slate-600 font-medium">Próxima Parada: <strong>${b.next_stop_name}</strong></p>
+                  <p class="text-emerald-700 font-bold mt-1">Llegada estimada: ${b.eta_minutes} min</p>
+                </div>
+              `);
+              busMarkers[b.bus_id] = m;
+            } else {
+              busMarkers[b.bus_id].setLatLng([b.current_lat, b.current_lng]);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Error al actualizar buses:", err);
+      }
+    }
+
+    function centerMapOnBuses() {
+      const keys = Object.keys(busMarkers);
+      if (keys.length > 0) {
+        const targetBus = busMarkers[keys[0]];
+        map.flyTo(targetBus.getLatLng(), 15);
+        targetBus.openPopup();
+      }
+    }
+
+    function toggleUserLocation() {
+      if (!navigator.geolocation) {
+        alert("La geolocalización no es compatible con su navegador.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          if (userMarker) {
+            userMarker.setLatLng([latitude, longitude]);
+          } else {
+            userMarker = L.circleMarker([latitude, longitude], {
+              radius: 9,
+              fillColor: '#059669',
+              color: '#ffffff',
+              weight: 3,
+              opacity: 1,
+              fillOpacity: 0.9
+            }).addTo(map);
+            userMarker.bindPopup("<strong>Tu ubicación actual</strong>").openPopup();
+          }
+          map.flyTo([latitude, longitude], 15);
+        },
+        () => {
+          alert("No se pudo obtener la ubicación GPS del dispositivo.");
+        }
+      );
+    }
+
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.reload();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      loadRoutesList();
+      telemetryInterval = setInterval(fetchLiveBuses, 3000);
+      
+      // En móvil, el panel ya empieza colapsado (translate-y-full). Actualizar icono.
+      if (window.innerWidth < 640) {
+        const icon = document.getElementById('btn-panel-icon');
+        const txt = document.getElementById('btn-panel-txt');
+        if (icon) icon.className = 'fa-solid fa-layer-group text-xs';
+        if (txt) txt.textContent = 'Ver Bus';
+      } else {
+        // En desktop mostrar el panel
+        isMobilePanelOpen = true;
+      }
+    });
+  </script>
+</body>
+</html>

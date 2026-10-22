@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            transmetro: { DEFAULT: '#1D4ED8', dark: '#1E40AF', light: '#3B82F6' },
+            baq: { yellow: '#FACC15', red: '#DC2626', green: '#059669', dark: '#0F172A' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col font-sans text-slate-800">
+
+  <!-- Franja Bandera Barranquilla -->
+  <div class="h-1.5 w-full flex sticky top-0 z-50">
+    <div class="h-full w-1/3 bg-baq-red"></div>
+    <div class="h-full w-1/3 bg-baq-yellow"></div>
+    <div class="h-full w-1/3 bg-baq-green"></div>
+  </div>
+
+  <!-- Header Superior Admin -->
+  <header class="bg-white border-b border-slate-200 sticky top-1.5 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-baq-dark text-white flex items-center justify-center font-bold shadow">
+          <i class="fa-solid fa-screwdriver-wrench text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-extrabold text-slate-900 leading-tight">MoviBAQ Admin Console</h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">SuperAdmin</span>
+          </div>
+          <p class="text-xs text-slate-400">Secretaría Distrital de Tránsito y Seguridad Vial</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-xs font-bold text-transmetro hover:underline">Ver Portal Pasajero</a>
+        <a href="/jefe-ruta" class="text-xs font-bold text-transmetro hover:underline">Ver CCO</a>
+        <button onclick="handleLogout()" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl transition">
+          Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido Admin: Tabs CRUD de Usuarios y Flota -->
+  <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+    
+    <!-- Padrón de Flota y Vehículos -->
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-bus text-transmetro"></i>
+            <span>Gestión de Flota de Buses Alimentadores</span>
+          </h2>
+          <p class="text-xs text-slate-400">Inventario oficial de padrones y asignaciones técnicas</p>
+        </div>
+        <span class="text-xs font-bold px-3 py-1 bg-slate-100 rounded-lg">7 Unidades Activas</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-50 uppercase text-[10px] font-bold text-slate-400">
+            <tr>
+              <th class="p-3">Padrón / ID</th>
+              <th class="p-3">Placa</th>
+              <th class="p-3">Ruta</th>
+              <th class="p-3">Capacidad</th>
+              <th class="p-3">Chasis / Carrocería</th>
+              <th class="p-3">Último Mtto</th>
+              <th class="p-3">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="fleet-table-body" class="divide-y divide-slate-100 font-medium">
+            <!-- Cargado por JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Gestión de Usuarios y Roles (RBAC) -->
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-users-gear text-purple-600"></i>
+            <span>Control de Acceso y Roles (RBAC)</span>
+          </h2>
+          <p class="text-xs text-slate-400">Asignación de perfiles: Pasajero, Conductor, Jefe de Ruta y Administrador</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-50 uppercase text-[10px] font-bold text-slate-400">
+            <tr>
+              <th class="p-3">Nombre Completo</th>
+              <th class="p-3">Correo Institucional</th>
+              <th class="p-3">Rol Asignado</th>
+              <th class="p-3">Asignación Operativa</th>
+              <th class="p-3">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body" class="divide-y divide-slate-100 font-medium">
+            <!-- Cargado por JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- PIE DE PÁGINA INSTITUCIONAL UNIFICADO -->
+  <footer class="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center text-white font-bold">
+            <i class="fa-solid fa-screwdriver-wrench text-xs"></i>
+          </div>
+          <div>
+            <p class="text-sm font-extrabold text-white">Movi<span class="text-transmetro">BAQ</span> Admin Console</p>
+            <p class="text-[11px] text-slate-500">Secretaría Distrital de Tránsito • Alcaldía de Barranquilla</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-6 text-[11px]">
+          <a href="/" class="hover:text-white transition">Inicio</a>
+          <a href="/mapa" class="hover:text-white transition">Mapa Pasajero</a>
+          <a href="/jefe-ruta" class="hover:text-white transition">Centro de Control CCO</a>
+        </div>
+        <div class="text-right text-[11px] text-slate-500 font-mono">
+          © 2026 MoviBAQ Administración Distrital
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    async function loadAdminData() {
+      // Cargar Flota
+      const fleetRes = await fetch('/api/admin/fleet');
+      const fleet = await fleetRes.json();
+      const fleetBody = document.getElementById('fleet-table-body');
+      fleetBody.innerHTML = '';
+      fleet.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-800">${v.bus_id}</td>
+          <td class="p-3 font-mono">${v.plate}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-transmetro">${v.route_id}</span></td>
+          <td class="p-3">${v.capacity} pax</td>
+          <td class="p-3">${v.chassis}</td>
+          <td class="p-3 font-mono text-slate-400">${v.last_maintenance}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${v.status === 'En Ruta' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${v.status}</span></td>
+        `;
+        fleetBody.appendChild(tr);
+      });
+
+      // Cargar Usuarios
+      const usersRes = await fetch('/api/admin/users');
+      const users = await usersRes.json();
+      const usersBody = document.getElementById('users-table-body');
+      usersBody.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-800">${u.fullname}</td>
+          <td class="p-3 font-mono">${u.email}</td>
+          <td class="p-3">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+              u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+              (u.role === 'jefe_ruta' ? 'bg-amber-100 text-amber-700' :
+              (u.role === 'conductor' ? 'bg-blue-100 text-transmetro' : 'bg-slate-100 text-slate-600'))
+            }">${u.role}</span>
+          </td>
+          <td class="p-3 text-slate-400">${u.assigned_bus ? u.assigned_bus + ' (' + u.assigned_route + ')' : 'N/A'}</td>
+          <td class="p-3">
+            <button onclick="editRole('${u.id}', '${u.fullname}')" class="text-transmetro font-bold hover:underline">Cambiar Rol</button>
+          </td>
+        `;
+        usersBody.appendChild(tr);
+      });
+    }
+
+    async function editRole(userId, name) {
+      const newRole = prompt(`Seleccione nuevo rol para ${name}:\n(pasajero, conductor, jefe_ruta, admin)`);
+      if (newRole && ['pasajero', 'conductor', 'jefe_ruta', 'admin'].includes(newRole)) {
+        await fetch(`/api/admin/users/${userId}/role`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_role: newRole })
+        });
+        alert("Rol actualizado exitosamente.");
+        loadAdminData();
+      }
+    }
+
+    async function handleLogout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    }
+
+    window.addEventListener('DOMContentLoaded', loadAdminData);
+  </script>
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            transmetro: { DEFAULT: '#1D4ED8', dark: '#1E40AF', light: '#3B82F6' },
+            baq: { yellow: '#FACC15', red: '#DC2626', green: '#059669', dark: '#0F172A' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col font-sans text-slate-800">
+
+  <!-- Franja Bandera Barranquilla -->
+  <div class="h-1.5 w-full flex sticky top-0 z-50">
+    <div class="h-full w-1/3 bg-baq-red"></div>
+    <div class="h-full w-1/3 bg-baq-yellow"></div>
+    <div class="h-full w-1/3 bg-baq-green"></div>
+  </div>
+
+  <!-- Header Superior CCO -->
+  <header class="bg-white border-b border-slate-200 sticky top-1.5 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-slate-900 text-baq-yellow flex items-center justify-center font-bold shadow">
+          <i class="fa-solid fa-tower-broadcast text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-extrabold text-slate-900 leading-tight">Centro de Control de Operaciones (CCO)</h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-transmetro rounded-full">Jefe de Ruta</span>
+          </div>
+          <p class="text-xs text-slate-400">Monitoreo de Alimentadores Transmetro Barranquilla</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="text-right hidden sm:block">
+          <p class="text-xs font-bold text-slate-800">{{ user.fullname }}</p>
+          <p class="text-[10px] text-slate-400">Despachador en Turno</p>
+        </div>
+        <button onclick="handleLogout()" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl transition flex items-center gap-1.5">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Salir</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Métricas KPI Rápidas -->
+  <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Flota Total</p>
+        <p class="text-2xl font-extrabold text-slate-800 mt-1" id="kpi-total">7</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <p class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Buses en Ruta</p>
+        <p class="text-2xl font-extrabold text-emerald-600 mt-1" id="kpi-en-ruta">5</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <p class="text-[11px] font-bold text-baq-red uppercase tracking-wider">Retrasos</p>
+        <p class="text-2xl font-extrabold text-baq-red mt-1" id="kpi-retrasos">1</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <p class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Incidentes Activos</p>
+        <p class="text-2xl font-extrabold text-amber-600 mt-1" id="kpi-incidentes">1</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <p class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Preop. Aprobados</p>
+        <p class="text-2xl font-extrabold text-blue-600 mt-1" id="kpi-preop-ok">6</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Preop. Novedad</p>
+        <p class="text-2xl font-extrabold text-slate-600 mt-1" id="kpi-preop-rech">0</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido Central: Mapa Global y Paneles de Control -->
+  <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 flex-grow">
+    
+    <!-- Mapa Operativo Global CCO -->
+    <section class="w-full lg:w-7/12 flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[480px]">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Mapa Operativo Satelital en Tiempo Real</h2>
+        </div>
+        <span class="text-xs font-mono text-slate-400" id="last-update-clock">Refresco: Activo</span>
+      </div>
+      <div id="cco-map" class="flex-grow w-full h-[450px]"></div>
+    </section>
+
+    <!-- Paneles Laterales: Regulación, Reasignación e Incidentes -->
+    <aside class="w-full lg:w-5/12 flex flex-col gap-5">
+      
+      <!-- Panel de Mensajes de Regulación a Conductores -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-headset text-transmetro"></i>
+          <span>Instrucción / Regulación a Cabina</span>
+        </h3>
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bus Destino</label>
+              <select id="msg-bus-target" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+                <option value="TM-3201">TM-3201 (A3-2 Soledad)</option>
+                <option value="TM-3205">TM-3205 (A3-2 Soledad)</option>
+                <option value="TM-5301">TM-5301 (A5-3 La Central)</option>
+                <option value="TM-7102">TM-7102 (A7-1 Ciudadela)</option>
+                <option value="TM-8820">TM-8820 (U30 Universidades)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Acción Rápida</label>
+              <select onchange="document.getElementById('msg-text-input').value = this.value" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                <option value="">Seleccionar preset...</option>
+                <option value="Regular velocidad: Mantener intervalo de 5 min.">Regular velocidad (+5 min)</option>
+                <option value="Acelerar paso para cubrir brecha de frecuencia.">Acelerar paso</option>
+                <option value="Pausa de 3 minutos en cabecera autorizada.">Pausa en cabecera</option>
+                <option value="Desvío autorizado por Calle 30 por congestión.">Desvío preventivo</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="msg-text-input" placeholder="Escribe mensaje directo a la cabina..." class="flex-grow p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <button onclick="sendRegulationMessage()" class="px-4 py-2.5 bg-transmetro hover:bg-transmetro-dark text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-paper-plane text-[10px]"></i>
+              <span>Enviar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reasignación Dinámica de Bus a Ruta -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-arrows-rotate text-amber-500"></i>
+          <span>Reasignación Dinámica de Bus</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Padrón / Bus</label>
+            <select id="reassign-bus-id" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+              <option value="TM-8101">TM-8101 (Actualmente en A8-1)</option>
+              <option value="TM-8105">TM-8105 (Actualmente en A8-1)</option>
+              <option value="TM-8201">TM-8201 (Actualmente en A8-2)</option>
+              <option value="TM-9301">TM-9301 (Actualmente en A9-3)</option>
+              <option value="TM-9304">TM-9304 (Actualmente en A9-3)</option>
+              <option value="TM-7301">TM-7301 (Actualmente en A7-3)</option>
+              <option value="TM-7401">TM-7401 (Actualmente en A7-4)</option>
+              <option value="TM-1201">TM-1201 (Actualmente en A1-2)</option>
+              <option value="TM-3101">TM-3101 (Actualmente en A3-1)</option>
+              <option value="TM-2101">TM-2101 (Actualmente en A2-1)</option>
+              <option value="TM-3201">TM-3201 (Actualmente en A3-2)</option>
+              <option value="TM-5301">TM-5301 (Actualmente en A5-3)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nueva Ruta Refuerzo</label>
+            <select id="reassign-new-route" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+              <option value="A8-1">A8-1 Paraíso - Vía 40</option>
+              <option value="A8-2">A8-2 Vía 40 - Zoológico</option>
+              <option value="A9-3">A9-3 Buenavista - Villa Country</option>
+              <option value="A7-3">A7-3 Carrera 38</option>
+              <option value="A7-4">A7-4 Los Andes - Betania</option>
+              <option value="A1-2">A1-2 Carrera Ocho</option>
+              <option value="A3-1">A3-1 Villa Katanga - Plaza del Sol</option>
+              <option value="A2-1">A2-1 Hipódromo - Metrocentro</option>
+              <option value="A3-2">A3-2 Soledad - Hipódromo</option>
+              <option value="A5-3">A5-3 La Central - Soledad 2000</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="executeReassignment()" class="w-full py-2 bg-slate-800 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-check"></i>
+          <span>Aplicar Reasignación de Bus</span>
+        </button>
+      </div>
+
+      <!-- Asignación Específica de Conductor a Ruta y Vehículo -->
+      <div class="bg-gradient-to-br from-blue-50 to-indigo-50/60 rounded-3xl p-5 border border-blue-200/80 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-transmetro flex items-center gap-2">
+            <i class="fa-solid fa-user-gear"></i>
+            <span>Asignar Ruta a Conductor</span>
+          </h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-transmetro rounded-full">CCO Direct</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mb-3">Elige un conductor en turno y asígnale su ruta operativa y padrón vehicular.</p>
+        
+        <div class="space-y-2.5 mb-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Seleccionar Conductor</label>
+            <select id="assign-driver-select" onchange="onDriverSelected(this.value)" class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
+              <!-- Cargado dinámicamente -->
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Ruta Asignada</label>
+              <select id="assign-route-select" class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
+                <option value="A8-1">A8-1 Paraíso - Vía 40</option>
+                <option value="A8-2">A8-2 Vía 40 - Zoológico</option>
+                <option value="A9-3">A9-3 Buenavista - Villa Country</option>
+                <option value="A7-3">A7-3 Carrera 38</option>
+                <option value="A7-4">A7-4 Los Andes - Betania</option>
+                <option value="A1-2">A1-2 Carrera Ocho</option>
+                <option value="A3-1">A3-1 Villa Katanga - Plaza del Sol</option>
+                <option value="A2-1">A2-1 Hipódromo - Metrocentro</option>
+                <option value="A3-2">A3-2 Soledad - Hipódromo</option>
+                <option value="A5-3">A5-3 La Central - Soledad 2000</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Vehículo Padrón</label>
+              <select id="assign-bus-select" class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
+                <option value="TM-8101">TM-8101 (Scania K250UB)</option>
+                <option value="TM-8105">TM-8105 (Scania K250UB)</option>
+                <option value="TM-8201">TM-8201 (Busscar)</option>
+                <option value="TM-9301">TM-9301 (Scania K250UB)</option>
+                <option value="TM-9304">TM-9304 (Volvo B290R)</option>
+                <option value="TM-7301">TM-7301 (Scania K250UB)</option>
+                <option value="TM-7401">TM-7401 (Busscar)</option>
+                <option value="TM-1201">TM-1201 (Scania)</option>
+                <option value="TM-3101">TM-3101 (Scania)</option>
+                <option value="TM-2101">TM-2101 (Scania)</option>
+                <option value="TM-3201">TM-3201 (Scania)</option>
+                <option value="TM-5301">TM-5301 (Mercedes-Benz)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="executeDriverAssignment()" class="w-full py-2.5 bg-transmetro hover:bg-transmetro-dark text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
+          <i class="fa-solid fa-id-card-clip"></i>
+          <span>Guardar Asignación de Conductor</span>
+        </button>
+      </div>
+
+      <!-- Tabla de Incidentes en Vía en Tiempo Real -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex-grow">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-bell text-baq-red"></i>
+            <span>Historial e Incidentes en Vía</span>
+          </h3>
+          <span class="text-[10px] text-slate-400">Actualización en vivo</span>
+        </div>
+        <div id="incidents-container" class="space-y-2.5 max-h-60 overflow-y-auto">
+          <!-- Render dinámico -->
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- PIE DE PÁGINA INSTITUCIONAL UNIFICADO -->
+  <footer class="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-transmetro flex items-center justify-center text-white font-bold">
+            <i class="fa-solid fa-tower-broadcast text-xs"></i>
+          </div>
+          <div>
+            <p class="text-sm font-extrabold text-white">Movi<span class="text-transmetro">BAQ</span> Centro de Control CCO</p>
+            <p class="text-[11px] text-slate-500">Mesa de Regulación Distrital • Alcaldía de Barranquilla</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-6 text-[11px]">
+          <a href="/" class="hover:text-white transition">Inicio</a>
+          <a href="/mapa" class="hover:text-white transition">Mapa Pasajero</a>
+          <a href="/conductor" class="hover:text-white transition">Cabina Conductor</a>
+        </div>
+        <div class="text-right text-[11px] text-slate-500 font-mono">
+          © 2026 MoviBAQ Operaciones CCO
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let ccoMap = null;
+    let ccoBusMarkers = {};
+
+    function initCcoMap() {
+      ccoMap = L.map('cco-map').setView([10.9500, -74.8000], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap | Alcaldía de Barranquilla CCO',
+        maxZoom: 18
+      }).addTo(ccoMap);
+    }
+
+    function createBusMarkerIcon(status) {
+      const color = status === "Fuera de Servicio" ? "bg-red-600" : (status === "En Pausa / Regulación" ? "bg-amber-500" : "bg-transmetro");
+      return L.divIcon({
+        className: 'cco-bus-icon',
+        html: `
+          <div class="w-8 h-8 rounded-xl ${color} text-white shadow-lg flex items-center justify-center border-2 border-white font-bold text-xs">
+            <i class="fa-solid fa-bus text-xs"></i>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+    }
+
+    async function fetchFleetOverview() {
+      try {
+        const res = await fetch('/api/jefe-ruta/fleet-overview');
+        const data = await res.json();
+        if (data.status === 'success') {
+          // KPIs
+          document.getElementById('kpi-total').textContent = data.kpis.total_flota;
+          document.getElementById('kpi-en-ruta').textContent = data.kpis.buses_en_ruta;
+          document.getElementById('kpi-retrasos').textContent = data.kpis.buses_retrasados;
+          document.getElementById('kpi-incidentes').textContent = data.kpis.incidentes_pendientes;
+          document.getElementById('kpi-preop-ok').textContent = data.kpis.preoperacionales_aprobados;
+          document.getElementById('kpi-preop-rech').textContent = data.kpis.preoperacionales_rechazados;
+
+          // Marcadores de buses
+          data.buses.forEach(b => {
+            if (!ccoBusMarkers[b.bus_id]) {
+              const marker = L.marker([b.current_lat, b.current_lng], {
+                icon: createBusMarkerIcon(b.status)
+              }).addTo(ccoMap);
+              marker.bindPopup(`
+                <strong>${b.bus_id}</strong> (${b.plate})<br>
+                Conductor: ${b.driver_name}<br>
+                Estado: ${b.status}<br>
+                Velocidad: ${b.speed_kmh} km/h
+              `);
+              ccoBusMarkers[b.bus_id] = marker;
+            } else {
+              ccoBusMarkers[b.bus_id].setLatLng([b.current_lat, b.current_lng]);
+            }
+          });
+
+          // Incidentes
+          renderIncidentes(data.incidentes_recientes);
+        }
+      } catch (err) {
+        console.error("Error al obtener CCO fleet overview:", err);
+      }
+    }
+
+    function renderIncidentes(incidentes) {
+      const container = document.getElementById('incidents-container');
+      container.innerHTML = '';
+      if (!incidentes || incidentes.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400">No hay incidentes reportados en vía.</p>';
+        return;
+      }
+
+      incidentes.forEach(inc => {
+        const badgeColor = inc.estado === 'Pendiente' ? 'bg-red-100 text-red-700' : (inc.estado === 'En Atención' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700');
+        const item = document.createElement('div');
+        item.className = 'p-3 rounded-2xl border border-slate-100 bg-slate-50 text-xs flex flex-col gap-1';
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-extrabold text-slate-800">${inc.tipo} (${inc.bus_id})</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}">${inc.estado}</span>
+          </div>
+          <p class="text-slate-600">${inc.descripcion}</p>
+          <div class="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+            <span>Ubicación: ${inc.ubicacion_referencia}</span>
+            <button onclick="resolveIncident('${inc.id}')" class="text-transmetro font-bold hover:underline">Resolver</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    async function sendRegulationMessage() {
+      const busId = document.getElementById('msg-bus-target').value;
+      const text = document.getElementById('msg-text-input').value;
+      if (!text) return alert("Por favor escriba un mensaje.");
+
+      await fetch('/api/jefe-ruta/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bus_id: busId, text: text })
+      });
+      alert(`Mensaje transmitido al bus ${busId}`);
+      document.getElementById('msg-text-input').value = '';
+    }
+
+    async function executeReassignment() {
+      const busId = document.getElementById('reassign-bus-id').value;
+      const newRoute = document.getElementById('reassign-new-route').value;
+      await fetch('/api/jefe-ruta/reassign-route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bus_id: busId, new_route_id: newRoute })
+      });
+      alert(`Padrón ${busId} reasignado a la ruta ${newRoute}.`);
+      fetchFleetOverview();
+    }
+
+    async function resolveIncident(incId) {
+      await fetch(`/api/jefe-ruta/incidentes/${incId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nuevo_estado: "Resuelto", notas: "Atendido por equipo de vía" })
+      });
+      fetchFleetOverview();
+    }
+
+    async function handleLogout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    }
+
+    let conductorsData = [];
+
+    async function loadConductorsList() {
+      try {
+        const res = await fetch('/api/jefe-ruta/conductors');
+        const data = await res.json();
+        if (data.status === 'success') {
+          conductorsData = data.conductors;
+          const select = document.getElementById('assign-driver-select');
+          select.innerHTML = '';
+          conductorsData.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = `${c.fullname} (Actual: ${c.assigned_route || 'Sin ruta'} / ${c.assigned_bus || 'Sin bus'})`;
+            select.appendChild(opt);
+          });
+          if (conductorsData.length > 0) {
+            onDriverSelected(conductorsData[0].id);
+          }
+        }
+      } catch (err) {
+        console.error("Error al cargar lista de conductores:", err);
+      }
+    }
+
+    function onDriverSelected(driverId) {
+      const driver = conductorsData.find(c => c.id === driverId);
+      if (driver) {
+        if (driver.assigned_route) {
+          document.getElementById('assign-route-select').value = driver.assigned_route;
+        }
+        if (driver.assigned_bus) {
+          document.getElementById('assign-bus-select').value = driver.assigned_bus;
+        }
+      }
+    }
+
+    async function executeDriverAssignment() {
+      const driverId = document.getElementById('assign-driver-select').value;
+      const routeId = document.getElementById('assign-route-select').value;
+      const busId = document.getElementById('assign-bus-select').value;
+      
+      const res = await fetch('/api/jefe-ruta/assign-driver-route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driver_id: driverId,
+          route_id: routeId,
+          bus_id: busId
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        loadConductorsList();
+        fetchFleetOverview();
+      } else {
+        alert(data.detail || "Error al asignar conductor");
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initCcoMap();
+      fetchFleetOverview();
+      loadConductorsList();
+      setInterval(fetchFleetOverview, 3000);
+    });
+  </script>
+</body>
+</html>

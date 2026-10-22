@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            transmetro: { DEFAULT: '#0252CD', dark: '#003B99', light: '#2575FC' },
+            baq: { yellow: '#FACC15', red: '#DC2626', green: '#059669', dark: '#0F172A' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] text-slate-800">
+
+  <!-- Franja Tricolor Barranquilla -->
+  <div class="h-1.5 w-full flex sticky top-0 z-50">
+    <div class="h-full w-1/3 bg-baq-red"></div>
+    <div class="h-full w-1/3 bg-baq-yellow"></div>
+    <div class="h-full w-1/3 bg-baq-green"></div>
+  </div>
+
+  <!-- Header Superior Conductor -->
+  <header class="bg-white border-b border-slate-200 sticky top-1.5 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 to-transmetro text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
+          <i class="fa-solid fa-id-card-clip text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-extrabold text-slate-900 leading-tight">Cabina Virtual del Conductor</h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-transmetro rounded-full">Operador Activo</span>
+          </div>
+          <p class="text-xs text-slate-400">MoviBAQ Operaciones • Distrito de Barranquilla</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="/" class="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-transmetro transition">
+          <i class="fa-solid fa-house"></i>
+          <span>Inicio</span>
+        </a>
+        <div class="text-right hidden sm:block border-l border-slate-200 pl-3">
+          <p class="text-xs font-bold text-slate-800">{{ user.fullname }}</p>
+          <p class="text-[10px] text-slate-400">Padrón Asignado</p>
+        </div>
+        <button onclick="handleLogout()" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl transition flex items-center gap-1.5" title="Cerrar Sesión">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span class="hidden sm:inline">Cerrar Sesión</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barra de Pestañas / Módulos de Cabina -->
+  <div class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto py-2.5 no-scrollbar" aria-label="Tabs">
+        <button onclick="switchTab('modulo-telemetria')" id="tab-btn-modulo-telemetria" class="tab-button active px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-transmetro text-white shadow-sm shadow-blue-500/20">
+          <i class="fa-solid fa-satellite-dish"></i>
+          <span>1. Turno y GPS</span>
+        </button>
+        <button onclick="switchTab('modulo-preoperacional')" id="tab-btn-modulo-preoperacional" class="tab-button px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-transmetro hover:bg-slate-100 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span>2. Inspección Preoperacional</span>
+          <span id="tab-preop-status" class="w-2 h-2 rounded-full bg-amber-400"></span>
+        </button>
+        <button onclick="switchTab('modulo-incidentes')" id="tab-btn-modulo-incidentes" class="tab-button px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-transmetro hover:bg-slate-100 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>3. Reportar Incidente</span>
+        </button>
+        <button onclick="switchTab('modulo-despacho')" id="tab-btn-modulo-despacho" class="tab-button px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-transmetro hover:bg-slate-100 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-headset"></i>
+          <span>4. Despacho CCO</span>
+          <span class="px-1.5 py-0.2 bg-blue-100 text-transmetro text-[10px] rounded-full font-bold">1</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Contenido Modular Principal (Responsive Desktop & Mobile) -->
+  <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex-grow">
+    
+    <!-- ==================== MÓDULO 1: TURNO Y TELEMETRÍA GPS ==================== -->
+    <div id="modulo-telemetria" class="module-tab-content space-y-6">
+      
+      <!-- Resumen Superior en Tarjetas Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Bus Asignado -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Vehículo / Padrón</p>
+            <p class="text-xl font-black text-slate-900 mt-1" id="badge-bus-id">TM-3201</p>
+            <p class="text-xs text-slate-500 font-mono" id="badge-bus-plate">Placa: WPL-842</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-transmetro flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-bus"></i>
+          </div>
+        </div>
+
+        <!-- Ruta Asignada -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Ruta Asignada</p>
+            <p class="text-lg font-black text-transmetro mt-1 truncate max-w-[180px]" id="route-assigned-name">A3-2 Soledad</p>
+            <p class="text-xs text-slate-500">Frecuencia cada 7 min</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-baq-green flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-route"></i>
+          </div>
+        </div>
+
+        <!-- Estado de Turno -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Estado del Turno</p>
+            <span id="shift-status-badge" class="inline-block mt-1 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+              En Espera
+            </span>
+            <p class="text-[11px] text-slate-400 mt-1">Conductor en línea</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-user-clock"></i>
+          </div>
+        </div>
+
+        <!-- Preoperacional Status -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Preoperacional</p>
+            <p class="text-base font-extrabold text-amber-600 mt-1" id="preop-header-status">Pendiente</p>
+            <p class="text-[11px] text-slate-400">Obligatorio por ley</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Área de Control de Cabina y GPS -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Panel 1: Controles de Turno y Estado Operativo -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2 mb-4">
+              <i class="fa-solid fa-sliders text-transmetro"></i>
+              <span>Gestión de Turno Operativo</span>
+            </h3>
+
+            <!-- Botones Iniciar/Finalizar Turno -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+              <button id="btn-start-shift" onclick="toggleShift(true)" class="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+                <i class="fa-solid fa-play"></i>
+                <span>Iniciar Turno</span>
+              </button>
+              <button id="btn-end-shift" onclick="toggleShift(false)" class="py-3 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95">
+                <i class="fa-solid fa-stop"></i>
+                <span>Finalizar Turno</span>
+              </button>
+            </div>
+
+            <!-- Estado Operativo Vehicular -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-2">
+                Estado Operativo de la Unidad
+              </label>
+              <select id="select-bus-status" onchange="changeOperationalStatus(this.value)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-transmetro cursor-pointer">
+                <option value="Disponible">Disponible (En Patio / Cabecera)</option>
+                <option value="En Ruta" selected>En Ruta (Pasajeros a bordo)</option>
+                <option value="En Pausa / Regulación">En Pausa / Regulación CCO</option>
+                <option value="Fuera de Servicio">Fuera de Servicio</option>
+              </select>
+              <p class="text-[11px] text-slate-400 mt-2">
+                Los cambios se reflejan inmediatamente en la pantalla del CCO y de los usuarios.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 p-3.5 bg-blue-50/70 rounded-2xl border border-blue-100 flex items-center gap-3">
+            <i class="fa-solid fa-circle-info text-transmetro"></i>
+            <span class="text-xs text-blue-900 leading-snug">
+              Recuerda realizar la inspección preoperacional antes de iniciar la marcha en vía pública.
+            </span>
+          </div>
+        </div>
+
+        <!-- Panel 2 & 3: Transmisor GPS y Telemetría -->
+        <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                  <i class="fa-solid fa-tower-broadcast text-transmetro"></i>
+                  <span>Transmisión Satelital de Coordenadas</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">Emisión de telemetría para cálculo de ETA de pasajeros</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="gps-pulse" class="w-3 h-3 rounded-full bg-slate-300"></span>
+                <span class="text-xs font-bold text-slate-500" id="gps-indicator-text">En Espera</span>
+              </div>
+            </div>
+
+            <!-- Botones de Recorrido -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+              <button id="btn-start-route" onclick="toggleRouteTracking(true)" class="flex-1 py-4 bg-transmetro hover:bg-transmetro-dark text-white rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-transmetro/25 transition active:scale-98">
+                <i class="fa-solid fa-satellite-dish text-base"></i>
+                <span>Iniciar Transmisión de Recorrido</span>
+              </button>
+              <button id="btn-stop-route" onclick="toggleRouteTracking(false)" class="hidden flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 transition active:scale-98">
+                <i class="fa-solid fa-circle-pause text-base"></i>
+                <span>Pausar / Detener Transmisión</span>
+              </button>
+            </div>
+
+            <!-- Lecturas en Vivo -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Coordenadas GPS</span>
+                <p class="text-sm font-mono font-bold text-slate-800 mt-1" id="gps-coords">10.925400, -74.778800</p>
+              </div>
+              <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Velocidad Promedio</span>
+                <p class="text-sm font-black text-emerald-600 mt-1" id="gps-speed">0 km/h</p>
+              </div>
+              <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Frecuencia de Envío</span>
+                <p class="text-sm font-bold text-slate-700 mt-1">Cada 3 segundos</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Tecnología MoviBAQ Telemetry Core</span>
+            <span class="font-mono text-[11px] text-transmetro">Canal Seguro Activo</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ==================== MÓDULO 2: INSPECCIÓN PREOPERACIONAL ==================== -->
+    <div id="modulo-preoperacional" class="module-tab-content hidden space-y-6">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-clipboard-check text-baq-green"></i>
+              <span>Inspección Preoperacional Obligatoria</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">
+              Diligenciamiento digital diario antes de salida a servicio según directriz de Transmetro y MinTransporte.
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="px-3 py-1.5 rounded-xl bg-slate-100 text-xs font-bold text-slate-700 border border-slate-200">
+              Unidad: <span class="text-transmetro">TM-3201</span>
+            </span>
+          </div>
+        </div>
+
+        <form id="preop-form" onsubmit="submitPreoperacional(event)" class="mt-6 space-y-6">
+          
+          <!-- Kilometraje Odómetro -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50/50 p-4 rounded-2xl border border-blue-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label class="text-xs font-extrabold text-slate-800" for="preop-odometro">Kilometraje Odómetro Inicial:</label>
+              <p class="text-[11px] text-slate-500">Registre la lectura actual del tablero del bus.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="number" id="preop-odometro" value="138450" class="w-36 p-2 bg-white border border-slate-300 rounded-xl text-sm font-mono font-bold text-right focus:ring-2 focus:ring-transmetro">
+              <span class="text-xs font-bold text-slate-600">KM</span>
+            </div>
+          </div>
+
+          <!-- Grid de las 5 Categorías Técnicas -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            
+            <!-- 1. Sistema de Frenos -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/60 flex flex-col justify-between">
+              <div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-transmetro flex items-center gap-2 mb-3">
+                  <i class="fa-solid fa-gauge-high"></i>
+                  <span>1. Sistema de Frenos</span>
+                </h3>
+                <div class="space-y-3 text-xs">
+                  <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                    <span class="font-medium">Freno de Servicio y Carrera</span>
+                    <input type="checkbox" id="preop-freno-serv" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                  </label>
+                  <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                    <span class="font-medium">Freno de Estacionamiento</span>
+                    <input type="checkbox" id="preop-freno-est" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                  </label>
+                </div>
+              </div>
+              <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-600">Presión Manómetros:</span>
+                <div class="flex items-center gap-1.5">
+                  <input type="number" id="preop-freno-psi" value="115" class="w-16 p-1 bg-white border border-slate-300 rounded-lg text-center font-bold">
+                  <span class="text-[11px] font-bold text-slate-500">PSI</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Técnico y Luces -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/60">
+              <h3 class="text-xs font-black uppercase tracking-wider text-amber-600 flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-car"></i>
+                <span>2. Estado Técnico y Luces</span>
+              </h3>
+              <div class="space-y-2.5 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Neumáticos (Labrado > 2mm)</span>
+                  <input type="checkbox" id="preop-tec-neumaticos" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Luces Altas, Bajas y Cocuyos</span>
+                  <input type="checkbox" id="preop-tec-luces" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Direccionales y Luces Freno</span>
+                  <input type="checkbox" id="preop-tec-direccionales" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Limpiaparabrisas y Espejos</span>
+                  <input type="checkbox" id="preop-tec-limpia" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+              </div>
+            </div>
+
+            <!-- 3. Componentes de Pasajeros -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/60">
+              <h3 class="text-xs font-black uppercase tracking-wider text-emerald-600 flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-users"></i>
+                <span>3. Cabina de Pasajeros</span>
+              </h3>
+              <div class="space-y-2.5 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Timbres de Solicitud Parada</span>
+                  <input type="checkbox" id="preop-pas-timbre" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Puertas Neumáticas</span>
+                  <input type="checkbox" id="preop-pas-puertas" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Validador de Tarjetas</span>
+                  <input type="checkbox" id="preop-pas-validador" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Barras y Asientos Preferenciales</span>
+                  <input type="checkbox" id="preop-pas-barras" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+              </div>
+            </div>
+
+            <!-- 4. Seguridad y Emergencias -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/60">
+              <h3 class="text-xs font-black uppercase tracking-wider text-baq-red flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>4. Seguridad y Emergencias</span>
+              </h3>
+              <div class="space-y-2.5 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Extintor Vigente (Manómetro verde)</span>
+                  <input type="checkbox" id="preop-seg-extintor" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Botiquín de Primeros Auxilios</span>
+                  <input type="checkbox" id="preop-seg-botiquin" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Martillos Fragmentadores (4)</span>
+                  <input type="checkbox" id="preop-seg-martillos" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <span class="font-medium">Kit Carretera y Repuesto</span>
+                  <input type="checkbox" id="preop-seg-kit" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                </label>
+              </div>
+            </div>
+
+            <!-- 5. Fluidos -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/60 flex flex-col justify-between">
+              <div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-indigo-600 flex items-center gap-2 mb-3">
+                  <i class="fa-solid fa-oil-can"></i>
+                  <span>5. Niveles de Fluidos</span>
+                </h3>
+                <div class="space-y-3 text-xs">
+                  <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                    <span class="font-medium">Nivel de Aceite de Motor</span>
+                    <input type="checkbox" id="preop-flu-aceite" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                  </label>
+                  <label class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                    <span class="font-medium">Líquido Refrigerante</span>
+                    <input type="checkbox" id="preop-flu-refrig" checked class="w-4 h-4 text-transmetro rounded cursor-pointer">
+                  </label>
+                </div>
+              </div>
+              <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-600">Combustible Diésel / GNV:</span>
+                <div class="flex items-center gap-1.5">
+                  <input type="number" id="preop-flu-comb" value="90" min="0" max="100" class="w-16 p-1 bg-white border border-slate-300 rounded-lg text-center font-bold">
+                  <span class="text-[11px] font-bold text-slate-500">%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/60 flex flex-col justify-between">
+              <div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2 mb-2">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  <span>Observaciones Adicionales</span>
+                </h3>
+                <textarea id="preop-observaciones" rows="4" placeholder="Reporte alguna novedad visual, silletería o timbre antes de salir..." class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs"></textarea>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-2">Firma digital registrada con tu usuario activo.</p>
+            </div>
+
+          </div>
+
+          <!-- Botón de Envío -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <button type="submit" id="btn-submit-preop" class="px-8 py-3.5 bg-baq-green hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs sm:text-sm shadow-md shadow-emerald-600/20 flex items-center gap-2 transition active:scale-95">
+              <i class="fa-solid fa-check-double"></i>
+              <span>Firmar y Enviar Preoperacional al CCO</span>
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- ==================== MÓDULO 3: REPORTE DE INCIDENTES ==================== -->
+    <div id="modulo-incidentes" class="module-tab-content hidden space-y-6">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm max-w-3xl mx-auto">
+        
+        <div class="pb-6 border-b border-slate-200">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-baq-red text-xs font-bold mb-2">
+            <i class="fa-solid fa-triangle-exclamation"></i> Canal de Emergencias y Vía
+          </div>
+          <h2 class="text-lg font-extrabold text-slate-900">Reporte Inmediato de Incidente al CCO</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Esta información genera una alerta de prioridad alta en la consola del despachador y jefe de ruta en tiempo real.
+          </p>
+        </div>
+
+        <form id="incident-form" onsubmit="submitIncident(event)" class="mt-6 space-y-4">
+          <div>
+            <label class="block text-xs font-extrabold text-slate-700 mb-1.5 uppercase tracking-wider">Tipo de Incidente</label>
+            <select id="inc-tipo" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800">
+              <option value="Varada Mecánica">Varada Mecánica</option>
+              <option value="Accidente de Tránsito">Accidente de Tránsito</option>
+              <option value="Bloqueo en Vía / Congestión" selected>Bloqueo en Vía / Congestión</option>
+              <option value="Emergencia Médica a Bordo">Emergencia Médica a Bordo</option>
+              <option value="Alteración del Orden Público">Alteración del Orden Público</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-700 mb-1.5 uppercase tracking-wider">Nivel de Prioridad</label>
+              <select id="inc-prioridad" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800">
+                <option value="Baja">Baja</option>
+                <option value="Media" selected>Media</option>
+                <option value="Alta">Alta</option>
+                <option value="Crítica">Crítica (Riesgo Inminente)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-700 mb-1.5 uppercase tracking-wider">Punto / Parada de Referencia</label>
+              <input type="text" id="inc-ubicacion" required value="Calle 30 frente a Olímpica Hipódromo" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-extrabold text-slate-700 mb-1.5 uppercase tracking-wider">Descripción del Suceso</label>
+            <textarea id="inc-descripcion" required rows="4" placeholder="Describa la situación con precisión para coordinar apoyo vial, ambulancia o taller móvil..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs"></textarea>
+          </div>
+
+          <div class="pt-4 flex items-center justify-end">
+            <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-baq-red hover:bg-red-700 text-white font-extrabold rounded-2xl text-xs sm:text-sm shadow-md shadow-red-500/20 flex items-center justify-center gap-2 transition active:scale-95">
+              <i class="fa-solid fa-bullhorn"></i>
+              <span>Emitir Alerta Urgente al Despachador</span>
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- ==================== MÓDULO 4: DESPACHO CCO ==================== -->
+    <div id="modulo-despacho" class="module-tab-content hidden space-y-6">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm max-w-4xl mx-auto">
+        
+        <div class="flex items-center justify-between pb-6 border-b border-slate-200">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-headset text-transmetro"></i>
+              <span>Instrucciones y Regulación de Despacho (CCO)</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Canal de comunicación operativo entre el Centro de Control y la unidad.</p>
+          </div>
+          <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Conexión en Línea"></span>
+        </div>
+
+        <div id="cco-messages-container" class="mt-6 space-y-3">
+          <div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-100 text-slate-800 flex items-start gap-3">
+            <div class="w-9 h-9 rounded-xl bg-transmetro text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+              <i class="fa-solid fa-tower-broadcast text-xs"></i>
+            </div>
+            <div class="flex-grow">
+              <div class="flex items-center justify-between">
+                <p class="font-extrabold text-xs text-transmetro">Ing. Brenda Carvajal • Despacho CCO</p>
+                <span class="text-[10px] text-slate-400 font-mono">09:30 AM</span>
+              </div>
+              <p class="text-xs text-slate-700 mt-1">
+                Mantener intervalo de 5 minutos respecto a unidad TM-3205. Tráfico despejado en Calle 30.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <span>Línea radial CCO Transmetro: Canal 4</span>
+          <button onclick="alert('Confirmación de enterado enviada al CCO')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition">
+            <i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> Confirmar Enterado
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- PIE DE PÁGINA INSTITUCIONAL UNIFICADO -->
+  <footer class="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-transmetro flex items-center justify-center text-white font-bold">
+            <i class="fa-solid fa-bus text-xs"></i>
+          </div>
+          <div>
+            <p class="text-sm font-extrabold text-white">Movi<span class="text-transmetro">BAQ</span> Conductor</p>
+            <p class="text-[11px] text-slate-500">Cabina de Control • Alcaldía Distrital de Barranquilla</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-6 text-[11px]">
+          <a href="/" class="hover:text-white transition">Inicio</a>
+          <a href="/mapa" class="hover:text-white transition">Mapa Satelital</a>
+          <a href="/login" class="hover:text-white transition">Cambiar Usuario</a>
+        </div>
+
+        <div class="text-right text-[11px] text-slate-500 font-mono">
+          © 2026 MoviBAQ Operaciones
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- LÓGICA JAVASCRIPT CON MODULARIDAD Y TABS -->
+  <script>
+    let isTrackingRoute = false;
+    let gpsInterval = null;
+    let currentBusId = "TM-3201";
+    let currentRouteId = "A3-2";
+
+    function switchTab(targetTabId) {
+      document.querySelectorAll('.module-tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(targetTabId).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('bg-transmetro', 'text-white', 'shadow-sm', 'shadow-blue-500/20');
+        btn.classList.add('text-slate-600', 'hover:text-transmetro', 'hover:bg-slate-100');
+      });
+
+      const activeBtn = document.getElementById(`tab-btn-${targetTabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-transmetro', 'text-white', 'shadow-sm', 'shadow-blue-500/20');
+        activeBtn.classList.remove('text-slate-600', 'hover:text-transmetro', 'hover:bg-slate-100');
+      }
+    }
+
+    async function loadShift() {
+      try {
+        const res = await fetch('/api/conductor/shift-info');
+        const data = await res.json();
+        if (data.status === 'success') {
+          const c = data.conductor;
+          currentBusId = c.bus_id;
+          currentRouteId = c.route_id;
+          document.getElementById('badge-bus-id').textContent = c.bus_id;
+          document.getElementById('badge-bus-plate').textContent = `Placa: ${c.plate}`;
+          document.getElementById('route-assigned-name').textContent = `${c.route_id} ${c.route_name}`;
+          document.getElementById('select-bus-status').value = c.operational_status;
+          
+          if (c.preoperacional_completado) {
+            document.getElementById('preop-header-status').textContent = c.preoperacional_estado;
+            document.getElementById('preop-header-status').className = 'text-base font-extrabold text-emerald-600 mt-1';
+            document.getElementById('tab-preop-status').className = 'w-2 h-2 rounded-full bg-emerald-500';
+          }
+        }
+      } catch (err) {
+        console.error("Error al cargar turno:", err);
+      }
+    }
+
+    async function toggleShift(inShift) {
+      const status = inShift ? "En Ruta" : "Disponible";
+      await fetch('/api/conductor/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bus_id: currentBusId,
+          route_id: currentRouteId,
+          status: status,
+          in_shift: inShift
+        })
+      });
+
+      const badge = document.getElementById('shift-status-badge');
+      if (inShift) {
+        badge.className = "inline-block mt-1 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200";
+        badge.textContent = "Turno Activo";
+      } else {
+        badge.className = "inline-block mt-1 px-3 py-1 rounded-full text-xs font-extrabold bg-slate-200 text-slate-700";
+        badge.textContent = "Fuera de Turno";
+        toggleRouteTracking(false);
+      }
+    }
+
+    async function changeOperationalStatus(newStatus) {
+      await fetch('/api/conductor/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bus_id: currentBusId,
+          route_id: currentRouteId,
+          status: newStatus,
+          in_shift: true
+        })
+      });
+      alert(`Estado de la unidad actualizado a: ${newStatus}`);
+    }
+
+    function toggleRouteTracking(start) {
+      isTrackingRoute = start;
+      const btnStart = document.getElementById('btn-start-route');
+      const btnStop = document.getElementById('btn-stop-route');
+      const pulse = document.getElementById('gps-pulse');
+      const indicator = document.getElementById('gps-indicator-text');
+
+      if (start) {
+        btnStart.classList.add('hidden');
+        btnStop.classList.remove('hidden');
+        pulse.className = 'w-3 h-3 rounded-full bg-emerald-500 animate-ping';
+        indicator.textContent = 'Transmitiendo en Vivo';
+        indicator.className = 'text-xs font-bold text-emerald-600';
+        
+        let step = 0;
+        gpsInterval = setInterval(async () => {
+          step++;
+          const lat = +(10.9254 + (Math.sin(step / 4) * 0.012)).toFixed(6);
+          const lng = +(-74.7788 + (Math.cos(step / 4) * 0.008)).toFixed(6);
+          const speed = Math.floor(25 + Math.random() * 15);
+
+          document.getElementById('gps-coords').textContent = `${lat}, ${lng}`;
+          document.getElementById('gps-speed').textContent = `${speed} km/h`;
+
+          await fetch('/api/conductor/telemetry/gps', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bus_id: currentBusId,
+              route_id: currentRouteId,
+              lat: lat,
+              lng: lng,
+              speed_kmh: speed,
+              heading: 45.0,
+              occupancy_percent: 68
+            })
+          });
+        }, 3000);
+
+      } else {
+        btnStart.classList.remove('hidden');
+        btnStop.classList.add('hidden');
+        pulse.className = 'w-3 h-3 rounded-full bg-slate-300';
+        indicator.textContent = 'En Espera';
+        indicator.className = 'text-xs font-bold text-slate-500';
+        clearInterval(gpsInterval);
+      }
+    }
+
+    async function submitPreoperacional(e) {
+      e.preventDefault();
+      const payload = {
+        bus_id: currentBusId,
+        route_id: currentRouteId,
+        odometro_km: parseInt(document.getElementById('preop-odometro').value),
+        frenos: {
+          freno_servicio_ok: document.getElementById('preop-freno-serv').checked,
+          freno_estacionamiento_ok: document.getElementById('preop-freno-est').checked,
+          presion_manometros_psi: parseInt(document.getElementById('preop-freno-psi').value)
+        },
+        tecnico: {
+          neumaticos_labrado_ok: document.getElementById('preop-tec-neumaticos').checked,
+          luces_altas_bajas_ok: document.getElementById('preop-tec-luces').checked,
+          direccionales_freno_ok: document.getElementById('preop-tec-direccionales').checked,
+          limpiaparabrisas_espejos_ok: document.getElementById('preop-tec-limpia').checked
+        },
+        pasajeros: {
+          timbre_parada_ok: document.getElementById('preop-pas-timbre').checked,
+          puertas_neumaticas_ok: document.getElementById('preop-pas-puertas').checked,
+          validador_tarjetas_ok: document.getElementById('preop-pas-validador').checked,
+          barras_sujecion_ok: document.getElementById('preop-pas-barras').checked
+        },
+        seguridad: {
+          extintor_vigente: document.getElementById('preop-seg-extintor').checked,
+          botiquin_primeros_auxilios: document.getElementById('preop-seg-botiquin').checked,
+          martillos_fragmentadores: document.getElementById('preop-seg-martillos').checked,
+          kit_carretera_repuesto: document.getElementById('preop-seg-kit').checked
+        },
+        fluidos: {
+          nivel_aceite_motor_ok: document.getElementById('preop-flu-aceite').checked,
+          nivel_refrigerante_ok: document.getElementById('preop-flu-refrig').checked,
+          nivel_combustible_porcentaje: parseInt(document.getElementById('preop-flu-comb').value)
+        },
+        observaciones: document.getElementById('preop-observaciones').value
+      };
+
+      try {
+        const res = await fetch('/api/conductor/preoperacional', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        alert(`¡Inspección preoperacional registrada! Estado: ${data.estado_aprobacion}`);
+        document.getElementById('preop-header-status').textContent = data.estado_aprobacion;
+        document.getElementById('preop-header-status').className = 'text-base font-extrabold text-emerald-600 mt-1';
+        document.getElementById('tab-preop-status').className = 'w-2 h-2 rounded-full bg-emerald-500';
+      } catch (err) {
+        alert("Error al enviar preoperacional.");
+      }
+    }
+
+    async function submitIncident(e) {
+      e.preventDefault();
+      const payload = {
+        bus_id: currentBusId,
+        route_id: currentRouteId,
+        tipo: document.getElementById('inc-tipo').value,
+        prioridad: document.getElementById('inc-prioridad').value,
+        ubicacion_referencia: document.getElementById('inc-ubicacion').value,
+        descripcion: document.getElementById('inc-descripcion').value
+      };
+
+      try {
+        const res = await fetch('/api/conductor/incidente', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        alert(`Incidente reportado al CCO con ID ${data.id}. Estado: Pendiente`);
+        document.getElementById('inc-descripcion').value = '';
+      } catch (err) {
+        alert("Error al reportar incidente.");
+      }
+    }
+
+    async function handleLogout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    }
+
+    window.addEventListener('DOMContentLoaded', loadShift);
+  </script>
+</body>
+</html>
