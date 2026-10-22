@@ -9,12 +9,30 @@ from datetime import datetime, timedelta, timezone
 # JWT
 from jose import JWTError, jwt
 
+# Bcrypt para hashing seguro de contraseñas
+from passlib.context import CryptContext
+
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 
 # ----- CONFIGURACIÓN JWT -----
 SECRET_KEY = os.getenv("SECRET_KEY", "transmetro_barranquilla_secret_key_2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
+IS_PRODUCTION = os.getenv("ENVIRONMENT", "development").lower() == "production"
+
+# ----- BCRYPT CONTEXT -----
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    # Compatibilidad con usuarios semilla (texto plano legacy) y bcrypt
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        # Fallback: comparación directa para passwords legacy del seed SQL
+        return plain_password == hashed_password
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
@@ -206,8 +224,9 @@ def login(payload: UserLogin, response: Response):
             if email.lower() == input_user:
                 user = u
                 break
-                
-    if not user or user["password"] != payload.password:
+
+    # 3. Verificar existencia y contraseña (soporta bcrypt y texto plano legacy)
+    if not user or not verify_password(payload.password, user["password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas. Verifique su correo y contraseña."
@@ -229,7 +248,7 @@ def login(payload: UserLogin, response: Response):
         httponly=True,
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_HOURS * 3600,
-        secure=False  # Cambiar a True en producción con HTTPS
+        secure=IS_PRODUCTION  # True en producción (HTTPS), False en desarrollo
     )
 
     # Redirección calculada según rol
@@ -259,6 +278,23 @@ def login(payload: UserLogin, response: Response):
 def register(payload: UserRegister, response: Response):
     user_email = payload.email.lower().strip()
 
+    # Validar que las contraseñas coincidan
+    if payload.password != payload.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Las contraseñas no coinciden. Por favor verifique."
+        )
+
+    # Validar longitud mínima
+    if len(payload.password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La contraseña debe tener al menos 6 caracteres."
+        )
+
+    # Hash seguro de la contraseña con bcrypt
+    hashed_password = get_password_hash(payload.password)
+
     # Verificar existencia en BD Neon y guardar
     db_saved = False
     new_id = f"usr-{str(uuid.uuid4())[:8]}"
@@ -276,22 +312,19 @@ def register(payload: UserRegister, response: Response):
                         detail="Este correo electrónico ya se encuentra registrado en el sistema."
                     )
                 
-                assigned_bus = None
-                assigned_route = None
-                
                 db_user = Usuario(
                     id=new_id,
                     fullname=payload.fullname,
                     email=user_email,
-                    password_hash=payload.password,
+                    password_hash=hashed_password,  # ← bcrypt hash
                     role=payload.role.value,
-                    assigned_bus_id=assigned_bus,
-                    assigned_route_id=assigned_route
+                    assigned_bus_id=None,
+                    assigned_route_id=None
                 )
                 db.add(db_user)
                 db.commit()
                 db_saved = True
-                print(f"[BD Neon] Usuario registrado exitosamente: {user_email}")
+                print(f"[BD Neon] Usuario registrado con bcrypt hash: {user_email}")
             finally:
                 db.close()
     except HTTPException:
@@ -310,7 +343,7 @@ def register(payload: UserRegister, response: Response):
         "id": new_id,
         "fullname": payload.fullname,
         "email": user_email,
-        "password": payload.password,
+        "password": hashed_password,  # ← bcrypt hash en memoria también
         "role": payload.role.value,
         "assigned_bus": None,
         "assigned_route": None
@@ -333,7 +366,7 @@ def register(payload: UserRegister, response: Response):
         httponly=True,
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_HOURS * 3600,
-        secure=False
+        secure=IS_PRODUCTION  # True en producción (HTTPS), False en desarrollo
     )
 
     redirect_map = {

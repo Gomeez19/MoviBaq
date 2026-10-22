@@ -22,7 +22,8 @@ class UserLogin(BaseModel):
 class UserRegister(BaseModel):
     fullname: str
     email: EmailStr
-    password: str
+    password: str = Field(min_length=6)
+    confirm_password: str = Field(min_length=6)
     role: UserRole = UserRole.PASAJERO
 
 class UserResponse(BaseModel):

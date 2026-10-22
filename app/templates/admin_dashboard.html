@@ -4,119 +4,416 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ title }}</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            transmetro: { DEFAULT: '#1D4ED8', dark: '#1E40AF', light: '#3B82F6' },
-            baq: { yellow: '#FACC15', red: '#DC2626', green: '#059669', dark: '#0F172A' }
-          }
-        }
-      }
-    }
-  </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body class="bg-slate-50 min-h-screen flex flex-col font-sans text-slate-800">
+  <meta name="description" content="Panel de Administración MoviBAQ - Gestión de flota, usuarios y sistema de transporte Transmetro Barranquilla">
 
-  <!-- Franja Bandera Barranquilla -->
-  <div class="h-1.5 w-full flex sticky top-0 z-50">
-    <div class="h-full w-1/3 bg-baq-red"></div>
-    <div class="h-full w-1/3 bg-baq-yellow"></div>
-    <div class="h-full w-1/3 bg-baq-green"></div>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2563EB;
+      --blue-dark: #1D4ED8;
+      --blue-light: #3B82F6;
+      --emerald: #059669;
+      --amber: #D97706;
+      --red: #DC2626;
+      --purple: #7C3AED;
+      --slate-50: #F8FAFC;
+      --slate-100: #F1F5F9;
+      --slate-200: #E2E8F0;
+      --slate-300: #CBD5E1;
+      --slate-400: #94A3B8;
+      --slate-500: #64748B;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1E293B;
+      --slate-900: #0F172A;
+      --baq-red: #DC2626;
+      --baq-yellow: #FACC15;
+      --baq-green: #059669;
+    }
+
+    html { font-family: 'Inter', sans-serif; }
+    body { background: var(--slate-50); color: var(--slate-800); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* FLAG BAR */
+    .flag-bar { height: 4px; display: flex; position: sticky; top: 0; z-index: 100; }
+    .flag-bar div { flex: 1; }
+    .flag-bar .red { background: var(--baq-red); }
+    .flag-bar .yellow { background: var(--baq-yellow); }
+    .flag-bar .green { background: var(--baq-green); }
+
+    /* HEADER */
+    .header {
+      background: white;
+      border-bottom: 1px solid var(--slate-200);
+      position: sticky;
+      top: 4px;
+      z-index: 90;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header-brand { display: flex; align-items: center; gap: 12px; }
+    .header-icon {
+      width: 40px; height: 40px;
+      background: var(--slate-900);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px;
+    }
+    .brand-name { font-size: 16px; font-weight: 800; color: var(--slate-900); }
+    .brand-sub { font-size: 11px; color: var(--slate-400); margin-top: 1px; }
+    .badge-admin {
+      font-size: 9px; font-weight: 800;
+      padding: 2px 8px;
+      background: #EDE9FE; color: var(--purple);
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-link {
+      font-size: 12px; font-weight: 600;
+      color: var(--blue); padding: 6px 12px;
+      border-radius: 8px; text-decoration: none;
+      transition: background .15s;
+    }
+    .btn-link:hover { background: #EFF6FF; }
+    .btn-logout {
+      font-size: 12px; font-weight: 700;
+      padding: 7px 14px;
+      background: var(--slate-100);
+      color: var(--slate-600);
+      border: none; border-radius: 8px; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-logout:hover { background: #FEF2F2; color: var(--red); }
+
+    /* MAIN */
+    .main { max-width: 1400px; margin: 0 auto; padding: 28px 24px 48px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
+
+    /* STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .stat-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .stat-icon.blue { background: #EFF6FF; color: var(--blue); }
+    .stat-icon.emerald { background: #ECFDF5; color: var(--emerald); }
+    .stat-icon.purple { background: #F5F3FF; color: var(--purple); }
+    .stat-icon.amber { background: #FFFBEB; color: var(--amber); }
+    .stat-value { font-size: 26px; font-weight: 900; color: var(--slate-900); line-height: 1; }
+    .stat-label { font-size: 12px; color: var(--slate-400); font-weight: 500; margin-top: 2px; }
+
+    /* SECTION CARD */
+    .section-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    .section-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--slate-100);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      flex-wrap: wrap;
+    }
+    .section-title { font-size: 15px; font-weight: 800; color: var(--slate-800); display: flex; align-items: center; gap: 8px; }
+    .section-title i { font-size: 16px; }
+    .section-sub { font-size: 12px; color: var(--slate-400); margin-top: 2px; font-weight: 400; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px;
+      background: var(--blue); color: white;
+      font-size: 12px; font-weight: 700;
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,.3); }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: var(--slate-50); }
+    th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
+    td { padding: 12px 16px; color: var(--slate-600); border-bottom: 1px solid var(--slate-100); vertical-align: middle; }
+    tbody tr:hover { background: var(--slate-50); }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .td-bold { font-weight: 700; color: var(--slate-800); font-family: monospace; font-size: 12px; }
+    .td-name { font-weight: 600; color: var(--slate-800); }
+    .td-mono { font-family: monospace; font-size: 12px; }
+
+    /* BADGES */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+    }
+    .badge-admin-r { background: #F5F3FF; color: var(--purple); }
+    .badge-jefe { background: #FFFBEB; color: var(--amber); }
+    .badge-conductor { background: #EFF6FF; color: var(--blue); }
+    .badge-pasajero { background: var(--slate-100); color: var(--slate-600); }
+    .badge-en-ruta { background: #ECFDF5; color: var(--emerald); }
+    .badge-disponible { background: var(--slate-100); color: var(--slate-500); }
+    .badge-fuera { background: #FEF2F2; color: var(--red); }
+    .badge-pausa { background: #FFFBEB; color: var(--amber); }
+    .badge-route { background: #EFF6FF; color: var(--blue-dark); }
+
+    /* ACTION BUTTONS */
+    .action-btns { display: flex; gap: 6px; flex-wrap: nowrap; }
+    .btn-action {
+      padding: 5px 10px;
+      font-size: 11px; font-weight: 700;
+      border: 1px solid;
+      border-radius: 7px;
+      cursor: pointer; transition: all .15s;
+      display: inline-flex; align-items: center; gap: 4px;
+      white-space: nowrap;
+    }
+    .btn-edit { border-color: #BFDBFE; color: var(--blue); background: #EFF6FF; }
+    .btn-edit:hover { background: var(--blue); color: white; border-color: var(--blue); }
+    .btn-role { border-color: #DDD6FE; color: var(--purple); background: #F5F3FF; }
+    .btn-role:hover { background: var(--purple); color: white; border-color: var(--purple); }
+    .btn-delete { border-color: #FECACA; color: var(--red); background: #FEF2F2; }
+    .btn-delete:hover { background: var(--red); color: white; border-color: var(--red); }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15,23,42,.55); backdrop-filter: blur(4px);
+      z-index: 999; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: white; border-radius: 20px; padding: 28px;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: modalIn .2s ease;
+    }
+    @keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .modal-title { font-size: 17px; font-weight: 800; color: var(--slate-800); }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--slate-100); border: none; cursor: pointer;
+      color: var(--slate-400); font-size: 14px; display: flex;
+      align-items: center; justify-content: center; transition: all .15s;
+    }
+    .modal-close:hover { background: var(--slate-200); color: var(--slate-700); }
+
+    /* FORM ELEMENTS */
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--slate-600); text-transform: uppercase;
+      letter-spacing: .5px; margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%; padding: 10px 12px;
+      background: var(--slate-50); border: 1.5px solid var(--slate-200);
+      border-radius: 10px; font-size: 13px; color: var(--slate-800);
+      font-family: 'Inter', sans-serif;
+      transition: all .15s; outline: none;
+    }
+    .form-control:focus { border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-footer { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+    .btn-cancel {
+      padding: 10px 18px; font-size: 13px; font-weight: 700;
+      background: var(--slate-100); color: var(--slate-600);
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-cancel:hover { background: var(--slate-200); }
+    .btn-confirm {
+      padding: 10px 20px; font-size: 13px; font-weight: 700;
+      background: var(--blue); color: white;
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: all .15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-confirm:hover { background: var(--blue-dark); }
+    .btn-confirm.danger { background: var(--red); }
+    .btn-confirm.danger:hover { background: #B91C1C; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: var(--slate-800); color: white;
+      padding: 12px 18px; border-radius: 12px;
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.3);
+      animation: toastIn .25s ease;
+    }
+    .toast.success { background: var(--emerald); }
+    .toast.error { background: var(--red); }
+    @keyframes toastIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+    /* LOADING */
+    .loading-row td { text-align: center; padding: 32px; color: var(--slate-400); }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--slate-200); border-top-color: var(--blue); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--slate-400); }
+    .empty-state i { font-size: 36px; margin-bottom: 12px; opacity: .5; }
+    .empty-state p { font-size: 14px; }
+
+    /* FOOTER */
+    footer { background: var(--slate-900); color: var(--slate-400); font-size: 12px; border-top: 1px solid var(--slate-800); margin-top: auto; }
+    .footer-inner { max-width: 1400px; margin: 0 auto; padding: 20px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+    .footer-brand { display: flex; align-items: center; gap: 10px; }
+    .footer-icon { width: 32px; height: 32px; background: var(--purple); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+    .footer-name { font-size: 13px; font-weight: 800; color: white; }
+    .footer-sub { font-size: 11px; color: var(--slate-500); }
+    .footer-links { display: flex; gap: 20px; font-size: 11px; }
+    .footer-links a { color: var(--slate-400); text-decoration: none; transition: color .15s; }
+    .footer-links a:hover { color: white; }
+  </style>
+</head>
+<body>
+
+  <!-- Franja bandera Barranquilla -->
+  <div class="flag-bar">
+    <div class="red"></div>
+    <div class="yellow"></div>
+    <div class="green"></div>
   </div>
 
-  <!-- Header Superior Admin -->
-  <header class="bg-white border-b border-slate-200 sticky top-1.5 z-40 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-baq-dark text-white flex items-center justify-center font-bold shadow">
-          <i class="fa-solid fa-screwdriver-wrench text-lg"></i>
-        </div>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="header-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base font-extrabold text-slate-900 leading-tight">MoviBAQ Admin Console</h1>
-            <span class="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">SuperAdmin</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <h1 class="brand-name">MoviBAQ Admin Console</h1>
+            <span class="badge-admin">SuperAdmin</span>
           </div>
-          <p class="text-xs text-slate-400">Secretaría Distrital de Tránsito y Seguridad Vial</p>
+          <p class="brand-sub">Secretaría Distrital de Tránsito y Seguridad Vial</p>
         </div>
       </div>
-
-      <div class="flex items-center gap-4">
-        <a href="/" class="text-xs font-bold text-transmetro hover:underline">Ver Portal Pasajero</a>
-        <a href="/jefe-ruta" class="text-xs font-bold text-transmetro hover:underline">Ver CCO</a>
-        <button onclick="handleLogout()" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl transition">
-          Cerrar Sesión
-        </button>
+      <div class="header-actions">
+        <a href="/" class="btn-link"><i class="fa-solid fa-map-location-dot"></i> Portal Pasajero</a>
+        <a href="/jefe-ruta" class="btn-link"><i class="fa-solid fa-tower-broadcast"></i> Centro CCO</a>
+        <button class="btn-logout" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
       </div>
     </div>
   </header>
 
-  <!-- Contenido Admin: Tabs CRUD de Usuarios y Flota -->
-  <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
-    
-    <!-- Padrón de Flota y Vehículos -->
-    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-bus text-transmetro"></i>
-            <span>Gestión de Flota de Buses Alimentadores</span>
-          </h2>
-          <p class="text-xs text-slate-400">Inventario oficial de padrones y asignaciones técnicas</p>
-        </div>
-        <span class="text-xs font-bold px-3 py-1 bg-slate-100 rounded-lg">7 Unidades Activas</span>
-      </div>
+  <main class="main">
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-600">
-          <thead class="bg-slate-50 uppercase text-[10px] font-bold text-slate-400">
+    <!-- Tarjetas de estadísticas -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-bus"></i></div>
+        <div>
+          <div class="stat-value" id="stat-fleet">—</div>
+          <div class="stat-label">Vehículos en Flota</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon emerald"><i class="fa-solid fa-circle-dot"></i></div>
+        <div>
+          <div class="stat-value" id="stat-active">—</div>
+          <div class="stat-label">Buses En Ruta</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
+        <div>
+          <div class="stat-value" id="stat-users">—</div>
+          <div class="stat-label">Usuarios Registrados</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="fa-solid fa-user-tie"></i></div>
+        <div>
+          <div class="stat-value" id="stat-conductores">—</div>
+          <div class="stat-label">Conductores Activos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────────────────────────────── FLOTA ─────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title"><i class="fa-solid fa-bus" style="color:var(--blue)"></i> Gestión de Flota de Buses Alimentadores</div>
+          <div class="section-sub">Inventario oficial de padrones y asignaciones técnicas de Transmetro Barranquilla</div>
+        </div>
+        <button class="btn-primary" onclick="openFleetModal()">
+          <i class="fa-solid fa-plus"></i> Agregar Vehículo
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <th class="p-3">Padrón / ID</th>
-              <th class="p-3">Placa</th>
-              <th class="p-3">Ruta</th>
-              <th class="p-3">Capacidad</th>
-              <th class="p-3">Chasis / Carrocería</th>
-              <th class="p-3">Último Mtto</th>
-              <th class="p-3">Estado</th>
+              <th>Padrón / ID</th>
+              <th>Placa</th>
+              <th>Ruta Asignada</th>
+              <th>Capacidad</th>
+              <th>Chasis / Carrocería</th>
+              <th>Año</th>
+              <th>Último Mtto</th>
+              <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="fleet-table-body" class="divide-y divide-slate-100 font-medium">
-            <!-- Cargado por JS -->
+          <tbody id="fleet-table-body">
+            <tr class="loading-row"><td colspan="9"><span class="spinner"></span> Cargando flota...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Gestión de Usuarios y Roles (RBAC) -->
-    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-      <div class="flex items-center justify-between mb-4">
+    <!-- ─────────────────────────────────── USUARIOS ─────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
         <div>
-          <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-users-gear text-purple-600"></i>
-            <span>Control de Acceso y Roles (RBAC)</span>
-          </h2>
-          <p class="text-xs text-slate-400">Asignación de perfiles: Pasajero, Conductor, Jefe de Ruta y Administrador</p>
+          <div class="section-title"><i class="fa-solid fa-users-gear" style="color:var(--purple)"></i> Control de Acceso y Roles (RBAC)</div>
+          <div class="section-sub">Gestión de perfiles: Pasajero, Conductor, Jefe de Ruta y Administrador</div>
         </div>
       </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-600">
-          <thead class="bg-slate-50 uppercase text-[10px] font-bold text-slate-400">
+      <div class="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <th class="p-3">Nombre Completo</th>
-              <th class="p-3">Correo Institucional</th>
-              <th class="p-3">Rol Asignado</th>
-              <th class="p-3">Asignación Operativa</th>
-              <th class="p-3">Acción</th>
+              <th>Nombre Completo</th>
+              <th>Correo Institucional</th>
+              <th>Rol</th>
+              <th>Asignación</th>
+              <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="users-table-body" class="divide-y divide-slate-100 font-medium">
-            <!-- Cargado por JS -->
+          <tbody id="users-table-body">
+            <tr class="loading-row"><td colspan="5"><span class="spinner"></span> Cargando usuarios...</td></tr>
           </tbody>
         </table>
       </div>
@@ -124,97 +421,447 @@
 
   </main>
 
-  <!-- PIE DE PÁGINA INSTITUCIONAL UNIFICADO -->
-  <footer class="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center text-white font-bold">
-            <i class="fa-solid fa-screwdriver-wrench text-xs"></i>
-          </div>
-          <div>
-            <p class="text-sm font-extrabold text-white">Movi<span class="text-transmetro">BAQ</span> Admin Console</p>
-            <p class="text-[11px] text-slate-500">Secretaría Distrital de Tránsito • Alcaldía de Barranquilla</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-6 text-[11px]">
-          <a href="/" class="hover:text-white transition">Inicio</a>
-          <a href="/mapa" class="hover:text-white transition">Mapa Pasajero</a>
-          <a href="/jefe-ruta" class="hover:text-white transition">Centro de Control CCO</a>
-        </div>
-        <div class="text-right text-[11px] text-slate-500 font-mono">
-          © 2026 MoviBAQ Administración Distrital
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+        <div>
+          <div class="footer-name">MoviBAQ Admin Console</div>
+          <div class="footer-sub">Secretaría Distrital de Tránsito • Alcaldía de Barranquilla</div>
         </div>
       </div>
+      <div class="footer-links">
+        <a href="/">Inicio</a>
+        <a href="/mapa">Mapa Pasajero</a>
+        <a href="/jefe-ruta">Centro de Control CCO</a>
+      </div>
+      <div style="font-size:11px;color:var(--slate-500)">© 2026 MoviBAQ Administración Distrital</div>
     </div>
   </footer>
 
-  <script>
-    async function loadAdminData() {
-      // Cargar Flota
-      const fleetRes = await fetch('/api/admin/fleet');
-      const fleet = await fleetRes.json();
-      const fleetBody = document.getElementById('fleet-table-body');
-      fleetBody.innerHTML = '';
-      fleet.forEach(v => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50';
-        tr.innerHTML = `
-          <td class="p-3 font-bold text-slate-800">${v.bus_id}</td>
-          <td class="p-3 font-mono">${v.plate}</td>
-          <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-transmetro">${v.route_id}</span></td>
-          <td class="p-3">${v.capacity} pax</td>
-          <td class="p-3">${v.chassis}</td>
-          <td class="p-3 font-mono text-slate-400">${v.last_maintenance}</td>
-          <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${v.status === 'En Ruta' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${v.status}</span></td>
-        `;
-        fleetBody.appendChild(tr);
-      });
+  <!-- ═══════════════════ MODAL AGREGAR VEHÍCULO ═══════════════════ -->
+  <div class="modal-overlay" id="modal-fleet" onclick="closeModal('modal-fleet', event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-bus" style="color:var(--blue);margin-right:8px"></i>Registrar Nuevo Vehículo</div>
+        <button class="modal-close" onclick="closeModal('modal-fleet')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Padrón / ID *</label>
+          <input type="text" id="f-bus-id" class="form-control" placeholder="Ej: TM-9901">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Placa *</label>
+          <input type="text" id="f-plate" class="form-control" placeholder="Ej: WPL-100">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Ruta Asignada</label>
+          <input type="text" id="f-route-id" class="form-control" placeholder="Ej: A8-1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Año del Modelo</label>
+          <input type="number" id="f-year" class="form-control" value="2023" min="2015" max="2030">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Capacidad (pax)</label>
+          <input type="number" id="f-capacity" class="form-control" value="50" min="20" max="120">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Último Mantenimiento</label>
+          <input type="date" id="f-maintenance" class="form-control">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chasis / Carrocería</label>
+        <input type="text" id="f-chassis" class="form-control" placeholder="Ej: Scania K250UB / Busscar">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-fleet')">Cancelar</button>
+        <button class="btn-confirm" onclick="submitAddFleet()"><i class="fa-solid fa-plus"></i> Registrar Vehículo</button>
+      </div>
+    </div>
+  </div>
 
-      // Cargar Usuarios
-      const usersRes = await fetch('/api/admin/users');
-      const users = await usersRes.json();
-      const usersBody = document.getElementById('users-table-body');
-      usersBody.innerHTML = '';
-      users.forEach(u => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50';
-        tr.innerHTML = `
-          <td class="p-3 font-bold text-slate-800">${u.fullname}</td>
-          <td class="p-3 font-mono">${u.email}</td>
-          <td class="p-3">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-              u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-              (u.role === 'jefe_ruta' ? 'bg-amber-100 text-amber-700' :
-              (u.role === 'conductor' ? 'bg-blue-100 text-transmetro' : 'bg-slate-100 text-slate-600'))
-            }">${u.role}</span>
-          </td>
-          <td class="p-3 text-slate-400">${u.assigned_bus ? u.assigned_bus + ' (' + u.assigned_route + ')' : 'N/A'}</td>
-          <td class="p-3">
-            <button onclick="editRole('${u.id}', '${u.fullname}')" class="text-transmetro font-bold hover:underline">Cambiar Rol</button>
-          </td>
-        `;
-        usersBody.appendChild(tr);
-      });
+  <!-- ═══════════════════ MODAL EDITAR VEHÍCULO ═══════════════════ -->
+  <div class="modal-overlay" id="modal-edit-fleet" onclick="closeModal('modal-edit-fleet', event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-pen" style="color:var(--blue);margin-right:8px"></i>Editar Vehículo <span id="edit-fleet-id-label" style="color:var(--blue)"></span></div>
+        <button class="modal-close" onclick="closeModal('modal-edit-fleet')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <input type="hidden" id="ef-bus-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Placa</label>
+          <input type="text" id="ef-plate" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado Operacional</label>
+          <select id="ef-status" class="form-control">
+            <option value="Disponible">Disponible</option>
+            <option value="En Ruta">En Ruta</option>
+            <option value="En Pausa / Regulación">En Pausa / Regulación</option>
+            <option value="Fuera de Servicio">Fuera de Servicio</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Ruta Asignada</label>
+          <input type="text" id="ef-route" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Último Mantenimiento</label>
+          <input type="date" id="ef-maintenance" class="form-control">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chasis / Carrocería</label>
+        <input type="text" id="ef-chassis" class="form-control">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-edit-fleet')">Cancelar</button>
+        <button class="btn-confirm" onclick="submitEditFleet()"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MODAL CAMBIAR ROL ═══════════════════ -->
+  <div class="modal-overlay" id="modal-role" onclick="closeModal('modal-role', event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-user-gear" style="color:var(--purple);margin-right:8px"></i>Cambiar Rol de Usuario</div>
+        <button class="modal-close" onclick="closeModal('modal-role')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="font-size:13px;color:var(--slate-500);margin-bottom:16px">Usuario: <strong id="role-user-name" style="color:var(--slate-800)"></strong></p>
+      <input type="hidden" id="role-user-id">
+      <div class="form-group">
+        <label class="form-label">Nuevo Rol</label>
+        <select id="role-select" class="form-control">
+          <option value="pasajero">👤 Pasajero</option>
+          <option value="conductor">🚌 Conductor</option>
+          <option value="jefe_ruta">📡 Jefe de Ruta (CCO)</option>
+          <option value="admin">⚙️ Administrador</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-role')">Cancelar</button>
+        <button class="btn-confirm" onclick="submitRoleChange()"><i class="fa-solid fa-check"></i> Confirmar Cambio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MODAL CONFIRMAR ELIMINACIÓN ═══════════════════ -->
+  <div class="modal-overlay" id="modal-delete" onclick="closeModal('modal-delete', event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" style="color:var(--red)"><i class="fa-solid fa-triangle-exclamation" style="margin-right:8px"></i>Confirmar Eliminación</div>
+        <button class="modal-close" onclick="closeModal('modal-delete')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="font-size:14px;color:var(--slate-600);margin-bottom:6px" id="delete-msg">¿Estás seguro de que deseas eliminar este elemento?</p>
+      <p style="font-size:12px;color:var(--slate-400)">Esta acción desactivará el registro del sistema. Puede ser revertida desde la base de datos directamente.</p>
+      <input type="hidden" id="delete-target-id">
+      <input type="hidden" id="delete-target-type">
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-delete')">Cancelar</button>
+        <button class="btn-confirm danger" onclick="confirmDelete()"><i class="fa-solid fa-trash"></i> Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── UTILS ───────────────────────────────────────
+    function showToast(msg, type = 'success') {
+      document.querySelectorAll('.toast').forEach(t => t.remove());
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'circle-check' : 'triangle-exclamation'}"></i> ${msg}`;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
     }
 
-    async function editRole(userId, name) {
-      const newRole = prompt(`Seleccione nuevo rol para ${name}:\n(pasajero, conductor, jefe_ruta, admin)`);
-      if (newRole && ['pasajero', 'conductor', 'jefe_ruta', 'admin'].includes(newRole)) {
-        await fetch(`/api/admin/users/${userId}/role`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ new_role: newRole })
-        });
-        alert("Rol actualizado exitosamente.");
-        loadAdminData();
-      }
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id, e) {
+      if (e && e.target !== document.getElementById(id)) return;
+      document.getElementById(id).classList.remove('active');
     }
 
     async function handleLogout() {
       await fetch('/api/auth/logout', { method: 'POST' });
       window.location.href = '/login';
     }
+
+    function roleBadge(role) {
+      const map = {
+        admin: ['badge-admin-r', '⚙️ Admin'],
+        jefe_ruta: ['badge-jefe', '📡 Jefe Ruta'],
+        conductor: ['badge-conductor', '🚌 Conductor'],
+        pasajero: ['badge-pasajero', '👤 Pasajero']
+      };
+      const [cls, label] = map[role] || ['badge-pasajero', role];
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function statusBadge(status) {
+      const map = {
+        'En Ruta': 'badge-en-ruta',
+        'Disponible': 'badge-disponible',
+        'Fuera de Servicio': 'badge-fuera',
+        'En Pausa / Regulación': 'badge-pausa'
+      };
+      return `<span class="badge ${map[status] || 'badge-disponible'}">${status}</span>`;
+    }
+
+    // ─── CARGA DE DATOS ──────────────────────────────
+    let allUsers = [], allFleet = [];
+
+    async function loadAdminData() {
+      await Promise.all([loadFleet(), loadUsers()]);
+    }
+
+    async function loadFleet() {
+      try {
+        const res = await fetch('/api/admin/fleet');
+        const fleet = await res.json();
+        allFleet = fleet;
+        document.getElementById('stat-fleet').textContent = fleet.length;
+        document.getElementById('stat-active').textContent = fleet.filter(v => v.status === 'En Ruta').length;
+
+        const tbody = document.getElementById('fleet-table-body');
+        if (!fleet.length) {
+          tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-bus-simple"></i><p>No hay vehículos registrados en la flota.</p></div></td></tr>`;
+          return;
+        }
+        tbody.innerHTML = fleet.map(v => `
+          <tr>
+            <td class="td-bold">${v.bus_id}</td>
+            <td class="td-mono">${v.plate}</td>
+            <td><span class="badge badge-route">${v.route_id || 'Sin asignar'}</span></td>
+            <td>${v.capacity} pax</td>
+            <td style="font-size:12px;color:var(--slate-500)">${v.chassis}</td>
+            <td class="td-mono">${v.model_year || '—'}</td>
+            <td class="td-mono" style="color:var(--slate-400)">${v.last_maintenance}</td>
+            <td>${statusBadge(v.status)}</td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-action btn-edit" onclick="openEditFleet('${v.bus_id}','${v.plate}','${v.route_id||''}','${v.status}','${v.last_maintenance}','${v.chassis}')">
+                  <i class="fa-solid fa-pen"></i> Editar
+                </button>
+                <button class="btn-action btn-delete" onclick="openDelete('${v.bus_id}','fleet','Vehículo ${v.bus_id} — Placa ${v.plate}')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        document.getElementById('fleet-table-body').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--red)"><i class="fa-solid fa-circle-exclamation"></i> Error al cargar la flota</td></tr>`;
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users');
+        const users = await res.json();
+        allUsers = users;
+        document.getElementById('stat-users').textContent = users.length;
+        document.getElementById('stat-conductores').textContent = users.filter(u => u.role === 'conductor').length;
+
+        const tbody = document.getElementById('users-table-body');
+        if (!users.length) {
+          tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No hay usuarios registrados.</p></div></td></tr>`;
+          return;
+        }
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td class="td-name">${u.fullname}</td>
+            <td class="td-mono" style="color:var(--slate-500)">${u.email}</td>
+            <td>${roleBadge(u.role)}</td>
+            <td style="font-size:12px;color:var(--slate-400)">${u.assigned_bus ? `${u.assigned_bus} (${u.assigned_route})` : '<span style="color:var(--slate-300)">—</span>'}</td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-action btn-role" onclick="openRoleModal('${u.id}','${u.fullname}','${u.role}')">
+                  <i class="fa-solid fa-user-gear"></i> Rol
+                </button>
+                <button class="btn-action btn-delete" onclick="openDelete('${u.id}','user','${u.fullname} (${u.email})')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        document.getElementById('users-table-body').innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--red)"><i class="fa-solid fa-circle-exclamation"></i> Error al cargar usuarios</td></tr>`;
+      }
+    }
+
+    // ─── FLOTA MODALS ────────────────────────────────
+    function openFleetModal() {
+      document.getElementById('f-bus-id').value = '';
+      document.getElementById('f-plate').value = '';
+      document.getElementById('f-route-id').value = '';
+      document.getElementById('f-capacity').value = 50;
+      document.getElementById('f-year').value = 2023;
+      document.getElementById('f-chassis').value = 'Scania K250UB / Busscar';
+      document.getElementById('f-maintenance').value = new Date().toISOString().split('T')[0];
+      openModal('modal-fleet');
+    }
+
+    async function submitAddFleet() {
+      const busId = document.getElementById('f-bus-id').value.trim();
+      const plate = document.getElementById('f-plate').value.trim();
+      if (!busId || !plate) { showToast('Padrón y Placa son requeridos', 'error'); return; }
+
+      const btn = document.querySelector('#modal-fleet .btn-confirm');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Registrando...';
+
+      try {
+        const res = await fetch('/api/admin/fleet', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            bus_id: busId,
+            plate: plate,
+            route_id: document.getElementById('f-route-id').value.trim(),
+            capacity: parseInt(document.getElementById('f-capacity').value) || 50,
+            model_year: parseInt(document.getElementById('f-year').value) || 2023,
+            chassis: document.getElementById('f-chassis').value.trim() || 'Scania K250UB / Busscar',
+            last_maintenance: document.getElementById('f-maintenance').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al registrar');
+        closeModal('modal-fleet');
+        showToast(`Vehículo ${busId} registrado exitosamente`);
+        loadFleet();
+      } catch(e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-plus"></i> Registrar Vehículo';
+      }
+    }
+
+    function openEditFleet(busId, plate, routeId, status, maintenance, chassis) {
+      document.getElementById('ef-bus-id').value = busId;
+      document.getElementById('ef-plate').value = plate;
+      document.getElementById('ef-route').value = routeId;
+      document.getElementById('ef-status').value = status;
+      document.getElementById('ef-maintenance').value = maintenance !== 'N/A' ? maintenance : '';
+      document.getElementById('ef-chassis').value = chassis;
+      document.getElementById('edit-fleet-id-label').textContent = busId;
+      openModal('modal-edit-fleet');
+    }
+
+    async function submitEditFleet() {
+      const busId = document.getElementById('ef-bus-id').value;
+      const btn = document.querySelector('#modal-edit-fleet .btn-confirm');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+      try {
+        const res = await fetch(`/api/admin/fleet/${busId}`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            plate: document.getElementById('ef-plate').value,
+            current_route_id: document.getElementById('ef-route').value || null,
+            operational_status: document.getElementById('ef-status').value,
+            last_maintenance: document.getElementById('ef-maintenance').value || null,
+            chassis: document.getElementById('ef-chassis').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al actualizar');
+        closeModal('modal-edit-fleet');
+        showToast(`Vehículo ${busId} actualizado`);
+        loadFleet();
+      } catch(e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Cambios';
+      }
+    }
+
+    // ─── ROL MODAL ───────────────────────────────────
+    function openRoleModal(userId, name, currentRole) {
+      document.getElementById('role-user-id').value = userId;
+      document.getElementById('role-user-name').textContent = name;
+      document.getElementById('role-select').value = currentRole;
+      openModal('modal-role');
+    }
+
+    async function submitRoleChange() {
+      const userId = document.getElementById('role-user-id').value;
+      const newRole = document.getElementById('role-select').value;
+      const btn = document.querySelector('#modal-role .btn-confirm');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Aplicando...';
+
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/role`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ new_role: newRole })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al cambiar rol');
+        closeModal('modal-role');
+        showToast(`Rol actualizado a ${newRole}`);
+        loadUsers();
+      } catch(e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar Cambio';
+      }
+    }
+
+    // ─── DELETE MODAL ────────────────────────────────
+    function openDelete(id, type, label) {
+      document.getElementById('delete-target-id').value = id;
+      document.getElementById('delete-target-type').value = type;
+      document.getElementById('delete-msg').textContent = `¿Eliminar: "${label}"?`;
+      openModal('modal-delete');
+    }
+
+    async function confirmDelete() {
+      const id = document.getElementById('delete-target-id').value;
+      const type = document.getElementById('delete-target-type').value;
+      const url = type === 'fleet' ? `/api/admin/fleet/${id}` : `/api/admin/users/${id}`;
+      const btn = document.querySelector('#modal-delete .btn-confirm');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Eliminando...';
+
+      try {
+        const res = await fetch(url, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al eliminar');
+        closeModal('modal-delete');
+        showToast(data.message || 'Eliminado exitosamente');
+        if (type === 'fleet') loadFleet(); else loadUsers();
+      } catch(e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-trash"></i> Sí, Eliminar';
+      }
+    }
+
+    // Cerrar modal con Escape
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+      }
+    });
 
     window.addEventListener('DOMContentLoaded', loadAdminData);
   </script>
