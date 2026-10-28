@@ -379,3 +379,199 @@ def delete_fleet_vehicle(
         del BUS_TRACKER_STATE[bus_id]
         return {"status": "success", "message": f"Vehículo {bus_id} eliminado (modo local)"}
     raise HTTPException(status_code=404, detail=f"Vehículo {bus_id} no encontrado")
+
+
+# ─────────────────────────────────────────────
+# CRUD PARADEROS / PARADAS DE RUTA
+# ─────────────────────────────────────────────
+
+class StopCreate(BaseModel):
+    route_id: str
+    name: str
+    lat: float
+    lng: float
+    order: Optional[int] = None
+
+class StopUpdate(BaseModel):
+    name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    order: Optional[int] = None
+    route_id: Optional[str] = None
+
+@router.get("/stops")
+def get_all_stops(
+    route_id: Optional[str] = None,
+    user: dict = Depends(require_role([UserRole.ADMIN]))
+):
+    """Obtiene todos los paraderos del sistema o filtrados por ruta."""
+    results = []
+    
+    # Primero intentar desde BD
+    db = get_db_session()
+    if db:
+        try:
+            from app.models import Paradero
+            query = db.query(Paradero)
+            if route_id:
+                query = query.filter(Paradero.route_id == route_id.upper())
+            db_stops = query.order_by(Paradero.route_id, Paradero.stop_order).all()
+            if db_stops:
+                return [
+                    {
+                        "id": s.id,
+                        "route_id": s.route_id,
+                        "name": s.name,
+                        "lat": float(s.lat),
+                        "lng": float(s.lng),
+                        "order": s.stop_order
+                    }
+                    for s in db_stops
+                ]
+        except Exception as e:
+            print(f"[Admin GET /stops BD Error]: {e}")
+        finally:
+            db.close()
+
+    # Fallback o sincronización desde MOCK_ROUTES
+    for rid, rdata in MOCK_ROUTES.items():
+        if route_id and rid != route_id.upper():
+            continue
+        for s in rdata.get("stops", []):
+            results.append({
+                "id": s["id"],
+                "route_id": rid,
+                "name": s["name"],
+                "lat": float(s["lat"]),
+                "lng": float(s["lng"]),
+                "order": s["order"]
+            })
+    return results
+
+@router.post("/stops")
+def create_stop(
+    payload: StopCreate,
+    user: dict = Depends(require_role([UserRole.ADMIN]))
+):
+    """Crea una nueva parada y la asigna a una ruta existente."""
+    route_id = payload.route_id.upper()
+    if route_id not in MOCK_ROUTES:
+        raise HTTPException(status_code=404, detail=f"La ruta {route_id} no existe")
+
+    r_stops = MOCK_ROUTES[route_id]["stops"]
+    stop_order = payload.order if payload.order is not None else (len(r_stops) + 1)
+    stop_id = f"{route_id.lower().replace('-', '')}_s{len(r_stops) + 1}_{int(uuid.uuid4().int % 10000)}"
+
+    new_stop_dict = {
+        "id": stop_id,
+        "name": payload.name,
+        "lat": round(payload.lat, 6),
+        "lng": round(payload.lng, 6),
+        "order": stop_order
+    }
+    r_stops.append(new_stop_dict)
+
+    # Persistir en BD si existe conexión
+    db = get_db_session()
+    if db:
+        try:
+            from app.models import Paradero
+            db_stop = Paradero(
+                id=stop_id,
+                route_id=route_id,
+                name=payload.name,
+                lat=payload.lat,
+                lng=payload.lng,
+                stop_order=stop_order
+            )
+            db.add(db_stop)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"[Admin POST /stops BD Error]: {e}")
+        finally:
+            db.close()
+
+    return {
+        "status": "success",
+        "message": f"Parada '{payload.name}' agregada con éxito a la ruta {route_id}",
+        "stop": {**new_stop_dict, "route_id": route_id}
+    }
+
+@router.put("/stops/{stop_id}")
+def update_stop(
+    stop_id: str,
+    payload: StopUpdate,
+    user: dict = Depends(require_role([UserRole.ADMIN]))
+):
+    """Actualiza la ubicación o nombre de una parada existente."""
+    found = False
+    for rid, rdata in MOCK_ROUTES.items():
+        for s in rdata.get("stops", []):
+            if s["id"] == stop_id:
+                found = True
+                if payload.name is not None: s["name"] = payload.name
+                if payload.lat is not None: s["lat"] = round(payload.lat, 6)
+                if payload.lng is not None: s["lng"] = round(payload.lng, 6)
+                if payload.order is not None: s["order"] = payload.order
+                break
+        if found:
+            break
+
+    db = get_db_session()
+    if db:
+        try:
+            from app.models import Paradero
+            db_stop = db.query(Paradero).filter(Paradero.id == stop_id).first()
+            if db_stop:
+                if payload.name is not None: db_stop.name = payload.name
+                if payload.lat is not None: db_stop.lat = payload.lat
+                if payload.lng is not None: db_stop.lng = payload.lng
+                if payload.order is not None: db_stop.stop_order = payload.order
+                db.commit()
+                return {"status": "success", "message": f"Parada {stop_id} actualizada correctamente"}
+        except Exception as e:
+            db.rollback()
+            print(f"[Admin PUT /stops BD Error]: {e}")
+        finally:
+            db.close()
+
+    if found:
+        return {"status": "success", "message": f"Parada {stop_id} actualizada en memoria"}
+    raise HTTPException(status_code=404, detail="Parada no encontrada")
+
+@router.delete("/stops/{stop_id}")
+def delete_stop(
+    stop_id: str,
+    user: dict = Depends(require_role([UserRole.ADMIN]))
+):
+    """Elimina una parada de la ruta."""
+    deleted = False
+    for rid, rdata in MOCK_ROUTES.items():
+        initial_len = len(rdata.get("stops", []))
+        rdata["stops"] = [s for s in rdata.get("stops", []) if s["id"] != stop_id]
+        if len(rdata["stops"]) < initial_len:
+            deleted = True
+            # Reordenar stops
+            for idx, s in enumerate(rdata["stops"]):
+                s["order"] = idx + 1
+            break
+
+    db = get_db_session()
+    if db:
+        try:
+            from app.models import Paradero
+            db_stop = db.query(Paradero).filter(Paradero.id == stop_id).first()
+            if db_stop:
+                db.delete(db_stop)
+                db.commit()
+                return {"status": "success", "message": f"Parada {stop_id} eliminada"}
+        except Exception as e:
+            db.rollback()
+            print(f"[Admin DELETE /stops BD Error]: {e}")
+        finally:
+            db.close()
+
+    if deleted:
+        return {"status": "success", "message": f"Parada {stop_id} eliminada"}
+    raise HTTPException(status_code=404, detail="Parada no encontrada")

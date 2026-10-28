@@ -11,6 +11,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
+  <!-- Leaflet para visualización y selección en mapa de paradas -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -416,6 +420,38 @@
             <tr class="loading-row"><td colspan="5"><span class="spinner"></span> Cargando usuarios...</td></tr>
           </tbody>
         </table>
+    <!-- ─────────────────────────────────── PARADEROS Y RUTAS ─────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title"><i class="fa-solid fa-signs-post" style="color:var(--emerald)"></i> Gestión de Paraderos Oficiales</div>
+          <div class="section-sub">Añade o ajusta paradas georreferenciadas seleccionando directamente sobre el mapa</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <select id="filter-stops-route" onchange="loadStops(this.value)" class="form-control" style="width:auto;min-width:180px;padding:8px 12px;font-size:12px;font-weight:700;">
+            <option value="">Todas las Rutas</option>
+          </select>
+          <button class="btn-primary" onclick="openStopModal()" style="background:var(--emerald);">
+            <i class="fa-solid fa-location-dot"></i> + Nueva Parada en Mapa
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Orden</th>
+              <th>Ruta</th>
+              <th>Nombre de la Parada</th>
+              <th>Latitud</th>
+              <th>Longitud</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="stops-table-body">
+            <tr class="loading-row"><td colspan="6"><span class="spinner"></span> Cargando paradas...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -553,6 +589,54 @@
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('modal-role')">Cancelar</button>
         <button class="btn-confirm" onclick="submitRoleChange()"><i class="fa-solid fa-check"></i> Confirmar Cambio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MODAL AGREGAR / EDITAR PARADERO EN MAPA ═══════════════════ -->
+  <div class="modal-overlay" id="modal-stop" onclick="closeModal('modal-stop', event)">
+    <div class="modal" style="max-width:680px;">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-location-dot" style="color:var(--emerald);margin-right:8px"></i>Nueva Parada Georreferenciada</div>
+        <button class="modal-close" onclick="closeModal('modal-stop')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Ruta Transmetro *</label>
+          <select id="stop-route-select" class="form-control" onchange="onStopModalRouteChange(this.value)">
+            <!-- Poblado con rutas -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nombre de la Parada *</label>
+          <input type="text" id="stop-name-input" class="form-control" placeholder="Ej: Cra 30 con Cll 30 (Nueva)">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Latitud *</label>
+          <input type="number" step="0.000001" id="stop-lat-input" class="form-control" placeholder="10.925400">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Longitud *</label>
+          <input type="number" step="0.000001" id="stop-lng-input" class="form-control" placeholder="-74.778800">
+        </div>
+      </div>
+
+      <!-- Mapa interactivo de selección -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <label class="form-label" style="margin-bottom:0;">Haz clic en el mapa para fijar la ubicación exacta:</label>
+          <span style="font-size:11px;color:var(--blue);font-weight:600;"><i class="fa-solid fa-hand-pointer"></i> Clic en la calle</span>
+        </div>
+        <div id="admin-stop-map" style="height:260px;width:100%;border-radius:12px;border:1.5px solid var(--slate-200);overflow:hidden;background:#e5e7eb;"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-stop')">Cancelar</button>
+        <button class="btn-confirm" onclick="submitNewStop()" style="background:var(--emerald);"><i class="fa-solid fa-floppy-disk"></i> Guardar Parada</button>
       </div>
     </div>
   </div>
@@ -833,10 +917,198 @@
       openModal('modal-delete');
     }
 
+    // ─── CARGA DE DATOS ──────────────────────────────
+    let allUsers = [], allFleet = [], allStops = [], allRoutes = [];
+    let adminMap = null;
+    let adminStopMarker = null;
+    let adminRoutePolyline = null;
+
+    async function loadAdminData() {
+      await Promise.all([loadFleet(), loadUsers(), loadRoutesList(), loadStops()]);
+    }
+
+    async function loadRoutesList() {
+      try {
+        const res = await fetch('/api/transmetro/routes');
+        allRoutes = await res.json();
+        
+        // Poblar selects
+        const filterSelect = document.getElementById('filter-stops-route');
+        const modalSelect = document.getElementById('stop-route-select');
+        
+        filterSelect.innerHTML = '<option value="">Todas las Rutas</option>';
+        modalSelect.innerHTML = '';
+
+        allRoutes.forEach(r => {
+          const opt1 = document.createElement('option');
+          opt1.value = r.id;
+          opt1.textContent = `${r.code} - ${r.name}`;
+          filterSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = r.id;
+          opt2.textContent = `${r.code} - ${r.name}`;
+          modalSelect.appendChild(opt2);
+        });
+      } catch (e) {
+        console.error("Error al cargar rutas:", e);
+      }
+    }
+
+    async function loadStops(routeId = '') {
+      try {
+        const url = routeId ? `/api/admin/stops?route_id=${encodeURIComponent(routeId)}` : '/api/admin/stops';
+        const res = await fetch(url);
+        const stops = await res.json();
+        allStops = stops;
+
+        const tbody = document.getElementById('stops-table-body');
+        if (!stops.length) {
+          tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-signs-post"></i><p>No hay paraderos registrados para esta consulta.</p></div></td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = stops.map(s => `
+          <tr>
+            <td class="td-bold">#${s.order}</td>
+            <td><span class="badge badge-route">${s.route_id}</span></td>
+            <td class="td-name">${s.name}</td>
+            <td class="td-mono">${s.lat.toFixed(6)}</td>
+            <td class="td-mono">${s.lng.toFixed(6)}</td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-action btn-delete" onclick="openDelete('${s.id}','stop','Parada #${s.order}: ${s.name}')">
+                  <i class="fa-solid fa-trash"></i> Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        showToast('Error cargando paradas: ' + e.message, 'error');
+      }
+    }
+
+    function initAdminMap() {
+      if (!adminMap) {
+        adminMap = L.map('admin-stop-map').setView([10.9254, -74.7788], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(adminMap);
+
+        adminMap.on('click', function(e) {
+          const lat = parseFloat(e.latlng.lat.toFixed(6));
+          const lng = parseFloat(e.latlng.lng.toFixed(6));
+          document.getElementById('stop-lat-input').value = lat;
+          document.getElementById('stop-lng-input').value = lng;
+          updateAdminMarker(lat, lng);
+        });
+      }
+      setTimeout(() => { adminMap.invalidateSize(); }, 250);
+    }
+
+    function updateAdminMarker(lat, lng) {
+      if (!adminStopMarker) {
+        const icon = L.divIcon({
+          className: 'admin-marker-icon',
+          html: `<div style="background:#059669;color:white;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid white;box-shadow:0 3px 8px rgba(0,0,0,0.3);font-size:14px;"><i class="fa-solid fa-location-dot"></i></div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 30]
+        });
+        adminStopMarker = L.marker([lat, lng], { icon: icon, draggable: true }).addTo(adminMap);
+        adminStopMarker.on('dragend', function(e) {
+          const pos = e.target.getLatLng();
+          document.getElementById('stop-lat-input').value = parseFloat(pos.lat.toFixed(6));
+          document.getElementById('stop-lng-input').value = parseFloat(pos.lng.toFixed(6));
+        });
+      } else {
+        adminStopMarker.setLatLng([lat, lng]);
+      }
+    }
+
+    async function onStopModalRouteChange(routeId) {
+      try {
+        const res = await fetch(`/api/transmetro/routes/${routeId}`);
+        const rdata = await res.json();
+        if (adminRoutePolyline) {
+          adminMap.removeLayer(adminRoutePolyline);
+        }
+        if (rdata.path && rdata.path.length > 0) {
+          adminRoutePolyline = L.polyline(rdata.path, { color: rdata.color || '#2563EB', weight: 4 }).addTo(adminMap);
+          adminMap.fitBounds(adminRoutePolyline.getBounds(), { padding: [20, 20] });
+          const center = adminRoutePolyline.getBounds().getCenter();
+          document.getElementById('stop-lat-input').value = center.lat.toFixed(6);
+          document.getElementById('stop-lng-input').value = center.lng.toFixed(6);
+          updateAdminMarker(center.lat, center.lng);
+        }
+      } catch (err) {
+        console.warn("No se pudo cargar trazado de ruta en modal:", err);
+      }
+    }
+
+    function openStopModal() {
+      openModal('modal-stop');
+      initAdminMap();
+      const currentRoute = document.getElementById('stop-route-select').value;
+      if (currentRoute) {
+        onStopModalRouteChange(currentRoute);
+      }
+    }
+
+    async function submitNewStop() {
+      const routeId = document.getElementById('stop-route-select').value;
+      const name = document.getElementById('stop-name-input').value.trim();
+      const lat = parseFloat(document.getElementById('stop-lat-input').value);
+      const lng = parseFloat(document.getElementById('stop-lng-input').value);
+
+      if (!name) {
+        showToast("Por favor escribe un nombre para la parada", "error");
+        return;
+      }
+      if (isNaN(lat) || isNaN(lng)) {
+        showToast("Selecciona la ubicación en el mapa", "error");
+        return;
+      }
+
+      const btn = document.querySelector('#modal-stop .btn-confirm');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+      try {
+        const res = await fetch('/api/admin/stops', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            route_id: routeId,
+            name: name,
+            lat: lat,
+            lng: lng
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al guardar parada');
+
+        closeModal('modal-stop');
+        document.getElementById('stop-name-input').value = '';
+        showToast(data.message || 'Parada guardada exitosamente');
+        loadStops(document.getElementById('filter-stops-route').value);
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Parada';
+      }
+    }
+
     async function confirmDelete() {
       const id = document.getElementById('delete-target-id').value;
       const type = document.getElementById('delete-target-type').value;
-      const url = type === 'fleet' ? `/api/admin/fleet/${id}` : `/api/admin/users/${id}`;
+      let url = '';
+      if (type === 'fleet') url = `/api/admin/fleet/${id}`;
+      else if (type === 'stop') url = `/api/admin/stops/${id}`;
+      else url = `/api/admin/users/${id}`;
+
       const btn = document.querySelector('#modal-delete .btn-confirm');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Eliminando...';
@@ -847,7 +1119,9 @@
         if (!res.ok) throw new Error(data.detail || 'Error al eliminar');
         closeModal('modal-delete');
         showToast(data.message || 'Eliminado exitosamente');
-        if (type === 'fleet') loadFleet(); else loadUsers();
+        if (type === 'fleet') loadFleet();
+        else if (type === 'stop') loadStops(document.getElementById('filter-stops-route').value);
+        else loadUsers();
       } catch(e) {
         showToast(e.message, 'error');
       } finally {

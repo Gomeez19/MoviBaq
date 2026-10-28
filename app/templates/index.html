@@ -140,8 +140,18 @@
 
       <div class="bg-white/95 sm:backdrop-blur-md rounded-t-3xl sm:rounded-3xl shadow-2xl sm:shadow-glass border border-slate-200/80 sm:border-white/80 p-4 sm:p-5 flex flex-col h-full pointer-events-auto overflow-hidden">
         
-        <!-- Header del Panel: Ruta y Estado -->
-        <div class="flex-shrink-0">
+        <!-- Pestañas del Panel: Explorar Ruta vs ¿A dónde vas? -->
+        <div class="flex-shrink-0 grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-2xl mb-3 border border-slate-200">
+          <button id="tab-btn-route" onclick="switchPassengerTab('route')" class="py-1.5 text-xs font-extrabold rounded-xl bg-white text-transmetro shadow-sm transition">
+            <i class="fa-solid fa-route mr-1"></i> Ver Rutas
+          </button>
+          <button id="tab-btn-planner" onclick="switchPassengerTab('planner')" class="py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 rounded-xl transition">
+            <i class="fa-solid fa-diamond-turn-right mr-1"></i> ¿A dónde vas?
+          </button>
+        </div>
+
+        <!-- SECCIÓN 1: SELECTOR DE RUTA HABITUAL -->
+        <div id="section-view-route">
           <div class="flex items-center justify-between mb-2">
             <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <i class="fa-solid fa-location-arrow text-transmetro"></i>
@@ -165,6 +175,68 @@
             </select>
             <i class="fa-solid fa-bus text-transmetro absolute left-3.5 top-3.5 text-xs pointer-events-none"></i>
             <i class="fa-solid fa-chevron-down text-slate-400 absolute right-3.5 top-3.5 text-xs pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: PLANIFICADOR DE VIAJE "¿A DÓNDE VAS?" -->
+        <div id="section-view-planner" class="hidden flex-col mb-3">
+          <div class="relative mb-2">
+            <input type="text" id="destination-input" onkeyup="handlePlannerSearch(event)" placeholder="Escribe tu destino o busca abajo..." class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+            <i class="fa-solid fa-magnifying-glass-location text-emerald-600 absolute left-3 top-3.5 text-xs pointer-events-none"></i>
+            <button onclick="clearPlannerDestination()" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Sugerencias Populares de Barranquilla, Soledad y Malambo -->
+          <div class="mb-2">
+            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+              <span>Lugares Principales</span>
+              <span class="text-[9px] text-emerald-600 font-bold">BAQ • Soledad • Malambo</span>
+            </p>
+            <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-[11px]" id="chips-container">
+              <!-- Poblado por JS -->
+            </div>
+          </div>
+
+          <!-- Resultado del Planificador -->
+          <div id="planner-result-card" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-xs">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-extrabold text-emerald-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-route text-emerald-600"></i> Tu Mejor Opción
+              </span>
+              <span id="planner-total-time" class="bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-full text-[10px]">-- min</span>
+            </div>
+            
+            <div class="space-y-2 text-slate-700">
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-full bg-blue-100 text-transmetro flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">1</span>
+                <div>
+                  <p class="font-bold text-slate-900">Toma la ruta <span id="plan-route-code" class="text-transmetro font-black">--</span></p>
+                  <p class="text-[11px] text-slate-500">En paradero: <strong id="plan-start-stop" class="text-slate-700">--</strong></p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">2</span>
+                <div>
+                  <p class="font-bold text-slate-900">Bájate en el paradero:</p>
+                  <p class="text-[11px] text-slate-700 font-extrabold" id="plan-end-stop">--</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-2 pt-1 border-t border-emerald-200/60">
+                <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5"><i class="fa-solid fa-person-walking"></i></span>
+                <div>
+                  <p class="font-bold text-emerald-900">Caminar <span id="plan-walk-dist" class="font-black">-- metros</span> (aprox. <span id="plan-walk-time">-- min</span>)</p>
+                  <p class="text-[11px] text-emerald-700" id="plan-dest-name">Hacia tu destino final</p>
+                </div>
+              </div>
+            </div>
+
+            <button onclick="applyPlannerRoute()" class="w-full mt-2.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-center flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95">
+              <i class="fa-solid fa-map-pin"></i> Ver esta ruta y parada en el mapa
+            </button>
           </div>
         </div>
 
@@ -530,6 +602,231 @@
       }
     }
 
+    // ─── PLANIFICADOR "¿A DÓNDE VAS?" ──────────────────────
+    const KEY_PLACES = [
+      // Barranquilla
+      { name: "Gran Malecón del Río", city: "Barranquilla", lat: 11.0185, lng: -74.7925, icon: "fa-water" },
+      { name: "C.C. Buenavista / Mallplaza", city: "Barranquilla", lat: 11.0220, lng: -74.8395, icon: "fa-bag-shopping" },
+      { name: "Estación Retorno Joe Arroyo", city: "Barranquilla", lat: 10.9982, lng: -74.8105, icon: "fa-bus-simple" },
+      { name: "Zoológico de Barranquilla", city: "Barranquilla", lat: 11.0130, lng: -74.7940, icon: "fa-paw" },
+      { name: "C.C. Único Outlet", city: "Barranquilla", lat: 10.9910, lng: -74.8170, icon: "fa-tags" },
+      { name: "Universidad del Norte / Uninorte", city: "Barranquilla", lat: 11.0195, lng: -74.8500, icon: "fa-graduation-cap" },
+      { name: "Paseo Bolívar / Alcaldía", city: "Barranquilla", lat: 10.9840, lng: -74.7770, icon: "fa-landmark" },
+      { name: "Estadio Metropolitano Roberto Meléndez", city: "Barranquilla", lat: 10.9330, lng: -74.8010, icon: "fa-futbol" },
+      
+      // Soledad
+      { name: "Portal de Soledad (Transmetro)", city: "Soledad", lat: 10.9254, lng: -74.7788, icon: "fa-bus" },
+      { name: "C.C. Gran Plaza del Sol", city: "Soledad", lat: 10.9165, lng: -74.7715, icon: "fa-store" },
+      { name: "C.C. Carnaval Soledad", city: "Soledad", lat: 10.9180, lng: -74.7620, icon: "fa-masks-theater" },
+      { name: "Plaza Principal de Soledad", city: "Soledad", lat: 10.9430, lng: -74.7760, icon: "fa-church" },
+      { name: "Colegio ITIDA (Calle 30)", city: "Soledad", lat: 10.9320, lng: -74.7800, icon: "fa-school" },
+      { name: "Aeropuerto Internacional Ernesto Cortissoz", city: "Soledad", lat: 10.8895, lng: -74.7805, icon: "fa-plane-departure" },
+      { name: "Barrio Hipódromo / Mercado", city: "Soledad", lat: 10.9412, lng: -74.7725, icon: "fa-shop" },
+
+      // Malambo
+      { name: "Entrada a Malambo / PIMSA (Parque Industrial)", city: "Malambo", lat: 10.8710, lng: -74.7720, icon: "fa-industry" },
+      { name: "Plaza Central de Malambo", city: "Malambo", lat: 10.8590, lng: -74.7750, icon: "fa-tree" },
+      { name: "Batallón Vergara y Velasco", city: "Malambo", lat: 10.8650, lng: -74.7780, icon: "fa-shield-halved" }
+    ];
+
+    let plannerDestinationMarker = null;
+    let plannerWalkPolyline = null;
+    let selectedPlanData = null;
+
+    function renderPlannerChips() {
+      const container = document.getElementById('chips-container');
+      if (!container) return;
+      container.innerHTML = KEY_PLACES.slice(0, 10).map((p, idx) => `
+        <button onclick="selectDestinationPlace(${idx})" class="flex-shrink-0 px-2.5 py-1 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 font-bold flex items-center gap-1.5 transition active:scale-95 shadow-2xs">
+          <i class="fa-solid ${p.icon} text-emerald-600 text-[10px]"></i>
+          <span>${p.name.split('/')[0].trim()}</span>
+          <span class="text-[9px] text-slate-400 font-normal">(${p.city.slice(0, 3)})</span>
+        </button>
+      `).join('');
+    }
+
+    function switchPassengerTab(tab) {
+      const tabRoute = document.getElementById('tab-btn-route');
+      const tabPlan = document.getElementById('tab-btn-planner');
+      const secRoute = document.getElementById('section-view-route');
+      const secPlan = document.getElementById('section-view-planner');
+
+      if (tab === 'route') {
+        tabRoute.className = "py-1.5 text-xs font-extrabold rounded-xl bg-white text-transmetro shadow-sm transition";
+        tabPlan.className = "py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 rounded-xl transition";
+        secRoute.classList.remove('hidden');
+        secPlan.classList.add('hidden');
+      } else {
+        tabPlan.className = "py-1.5 text-xs font-extrabold rounded-xl bg-white text-emerald-600 shadow-sm transition";
+        tabRoute.className = "py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 rounded-xl transition";
+        secRoute.classList.add('hidden');
+        secPlan.classList.remove('hidden');
+        renderPlannerChips();
+      }
+    }
+
+    function selectDestinationPlace(idx) {
+      const place = KEY_PLACES[idx];
+      document.getElementById('destination-input').value = `${place.name} (${place.city})`;
+      calculateBestBusRoute(place.lat, place.lng, place.name);
+    }
+
+    function handlePlannerSearch(e) {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        document.getElementById('planner-result-card').classList.add('hidden');
+        return;
+      }
+      if (e.key === 'Enter') {
+        // Buscar coincidencia en lista o aproximar
+        const match = KEY_PLACES.find(p => p.name.toLowerCase().includes(q) || p.city.toLowerCase().includes(q));
+        if (match) {
+          calculateBestBusRoute(match.lat, match.lng, match.name);
+        } else {
+          // Destino génerico estimado en Barranquilla
+          calculateBestBusRoute(10.9982, -74.8105, q);
+        }
+      }
+    }
+
+    function clearPlannerDestination() {
+      document.getElementById('destination-input').value = '';
+      document.getElementById('planner-result-card').classList.add('hidden');
+      if (plannerDestinationMarker) map.removeLayer(plannerDestinationMarker);
+      if (plannerWalkPolyline) map.removeLayer(plannerWalkPolyline);
+    }
+
+    // Calcula la distancia geodésica en metros (fórmula Haversine)
+    function calcDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // Radio de la tierra en metros
+      const phi1 = lat1 * Math.PI / 180;
+      const phi2 = lat2 * Math.PI / 180;
+      const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+      const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+      const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                Math.cos(phi1) * Math.cos(phi2) *
+                Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c);
+    }
+
+    async function calculateBestBusRoute(destLat, destLng, destName) {
+      try {
+        const res = await fetch('/api/transmetro/routes');
+        const routes = await res.json();
+
+        let bestRoute = null;
+        let bestStop = null;
+        let minWalkDistance = Infinity;
+
+        // Inspeccionar paraderos de cada ruta para encontrar el más cercano al destino
+        for (const r of routes) {
+          const detailRes = await fetch(`/api/transmetro/routes/${r.id}`);
+          const detail = await detailRes.json();
+          for (const s of detail.stops) {
+            const dist = calcDistanceMeters(s.lat, s.lng, destLat, destLng);
+            if (dist < minWalkDistance) {
+              minWalkDistance = dist;
+              bestStop = s;
+              bestRoute = detail;
+            }
+          }
+        }
+
+        if (!bestRoute || !bestStop) {
+          alert("No se encontró una ruta cercana.");
+          return;
+        }
+
+        const startStop = bestRoute.stops[0];
+        const walkMin = Math.max(1, Math.round(minWalkDistance / 75)); // ~75 metros por minuto
+        const busMin = Math.max(4, Math.round((bestStop.order - 1) * 2.5));
+        const totalMin = busMin + walkMin;
+
+        selectedPlanData = {
+          routeId: bestRoute.id,
+          routeCode: bestRoute.code,
+          routeName: bestRoute.name,
+          startStop: startStop.name,
+          endStop: bestStop.name,
+          stopLat: bestStop.lat,
+          stopLng: bestStop.lng,
+          destLat: destLat,
+          destLng: destLng,
+          destName: destName,
+          walkMeters: minWalkDistance,
+          walkMinutes: walkMin,
+          totalMinutes: totalMin
+        };
+
+        // Renderizar tarjeta de resultado
+        document.getElementById('plan-route-code').textContent = `${bestRoute.code} - ${bestRoute.name}`;
+        document.getElementById('plan-start-stop').textContent = startStop.name;
+        document.getElementById('plan-end-stop').textContent = `Parada #${bestStop.order}: ${bestStop.name}`;
+        document.getElementById('plan-walk-dist').textContent = `${minWalkDistance} metros`;
+        document.getElementById('plan-walk-time').textContent = `${walkMin} min`;
+        document.getElementById('plan-dest-name').textContent = `Hacia: ${destName}`;
+        document.getElementById('planner-total-time').textContent = `${totalMin} min viaje`;
+        document.getElementById('planner-result-card').classList.remove('hidden');
+
+        // Dibujar en mapa
+        drawPlannerTrip(selectedPlanData);
+
+      } catch (err) {
+        console.error("Error calculando ruta:", err);
+      }
+    }
+
+    function drawPlannerTrip(plan) {
+      if (plannerDestinationMarker) map.removeLayer(plannerDestinationMarker);
+      if (plannerWalkPolyline) map.removeLayer(plannerWalkPolyline);
+
+      // Marcador de destino
+      const destIcon = L.divIcon({
+        className: 'dest-icon',
+        html: `
+          <div class="relative flex items-center justify-center">
+            <div class="w-9 h-9 rounded-2xl bg-rose-600 text-white shadow-xl flex items-center justify-center border-2 border-white animate-bounce">
+              <i class="fa-solid fa-flag-checkered text-xs"></i>
+            </div>
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 36]
+      });
+
+      plannerDestinationMarker = L.marker([plan.destLat, plan.destLng], { icon: destIcon }).addTo(map);
+      plannerDestinationMarker.bindPopup(`<strong>Destino:</strong><br>${plan.destName}`).openPopup();
+
+      // Línea punteada de caminata
+      plannerWalkPolyline = L.polyline([
+        [plan.stopLat, plan.stopLng],
+        [plan.destLat, plan.destLng]
+      ], {
+        color: '#059669',
+        weight: 4,
+        dashArray: '6, 8',
+        opacity: 0.95
+      }).addTo(map);
+
+      // Cargar y mostrar la ruta en el mapa
+      onSelectRoute(plan.routeId);
+
+      const bounds = L.latLngBounds([
+        [plan.stopLat, plan.stopLng],
+        [plan.destLat, plan.destLng]
+      ]);
+      map.fitBounds(bounds, { padding: [60, 60] });
+    }
+
+    function applyPlannerRoute() {
+      if (selectedPlanData) {
+        onSelectRoute(selectedPlanData.routeId);
+        map.flyTo([selectedPlanData.stopLat, selectedPlanData.stopLng], 16);
+      }
+    }
+
     function toggleUserLocation() {
       if (!navigator.geolocation) {
         alert("La geolocalización no es compatible con su navegador.");
@@ -572,6 +869,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       initMap();
       loadRoutesList();
+      renderPlannerChips();
       telemetryInterval = setInterval(fetchLiveBuses, 3000);
       
       // En móvil, el panel ya empieza colapsado (translate-y-full). Actualizar icono.
