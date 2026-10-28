@@ -602,44 +602,46 @@
       }
     }
 
-    // ─── PLANIFICADOR "¿A DÓNDE VAS?" ──────────────────────
+    // ─── PLANIFICADOR "¿A DÓNDE VAS?" CON COORDENADAS 100% REALES ──────────────────────
     const KEY_PLACES = [
       // Barranquilla
-      { name: "Gran Malecón del Río", city: "Barranquilla", lat: 11.0185, lng: -74.7925, icon: "fa-water" },
-      { name: "C.C. Buenavista / Mallplaza", city: "Barranquilla", lat: 11.0220, lng: -74.8395, icon: "fa-bag-shopping" },
-      { name: "Estación Retorno Joe Arroyo", city: "Barranquilla", lat: 10.9982, lng: -74.8105, icon: "fa-bus-simple" },
-      { name: "Zoológico de Barranquilla", city: "Barranquilla", lat: 11.0130, lng: -74.7940, icon: "fa-paw" },
-      { name: "C.C. Único Outlet", city: "Barranquilla", lat: 10.9910, lng: -74.8170, icon: "fa-tags" },
-      { name: "Universidad del Norte / Uninorte", city: "Barranquilla", lat: 11.0195, lng: -74.8500, icon: "fa-graduation-cap" },
-      { name: "Paseo Bolívar / Alcaldía", city: "Barranquilla", lat: 10.9840, lng: -74.7770, icon: "fa-landmark" },
-      { name: "Estadio Metropolitano Roberto Meléndez", city: "Barranquilla", lat: 10.9330, lng: -74.8010, icon: "fa-futbol" },
+      { name: "Estadio Metropolitano Roberto Meléndez", city: "Barranquilla", lat: 10.926861, lng: -74.800722, icon: "fa-futbol" },
+      { name: "Gran Malecón del Río", city: "Barranquilla", lat: 11.025833, lng: -74.798611, icon: "fa-water" },
+      { name: "C.C. Buenavista / Mallplaza", city: "Barranquilla", lat: 11.013611, lng: -74.827778, icon: "fa-bag-shopping" },
+      { name: "Estación Retorno Joe Arroyo", city: "Barranquilla", lat: 10.995207, lng: -74.807552, icon: "fa-bus-simple" },
+      { name: "Zoológico de Barranquilla", city: "Barranquilla", lat: 11.009500, lng: -74.800500, icon: "fa-paw" },
+      { name: "C.C. Único Outlet (Calle 74)", city: "Barranquilla", lat: 10.991000, lng: -74.817000, icon: "fa-tags" },
+      { name: "Universidad del Norte (Uninorte)", city: "Barranquilla", lat: 11.018056, lng: -74.851111, icon: "fa-graduation-cap" },
+      { name: "Paseo Bolívar / Alcaldía Distrital", city: "Barranquilla", lat: 10.984000, lng: -74.777000, icon: "fa-landmark" },
+      { name: "Plaza de la Paz / Catedral", city: "Barranquilla", lat: 10.987800, lng: -74.788900, icon: "fa-place-of-worship" },
       
       // Soledad
-      { name: "Portal de Soledad (Transmetro)", city: "Soledad", lat: 10.9254, lng: -74.7788, icon: "fa-bus" },
-      { name: "C.C. Gran Plaza del Sol", city: "Soledad", lat: 10.9165, lng: -74.7715, icon: "fa-store" },
-      { name: "C.C. Carnaval Soledad", city: "Soledad", lat: 10.9180, lng: -74.7620, icon: "fa-masks-theater" },
-      { name: "Plaza Principal de Soledad", city: "Soledad", lat: 10.9430, lng: -74.7760, icon: "fa-church" },
-      { name: "Colegio ITIDA (Calle 30)", city: "Soledad", lat: 10.9320, lng: -74.7800, icon: "fa-school" },
-      { name: "Aeropuerto Internacional Ernesto Cortissoz", city: "Soledad", lat: 10.8895, lng: -74.7805, icon: "fa-plane-departure" },
-      { name: "Barrio Hipódromo / Mercado", city: "Soledad", lat: 10.9412, lng: -74.7725, icon: "fa-shop" },
+      { name: "Portal de Soledad (Transmetro Murillo)", city: "Soledad", lat: 10.907460, lng: -74.800421, icon: "fa-bus" },
+      { name: "C.C. Gran Plaza del Sol (Calle 30)", city: "Soledad", lat: 10.926800, lng: -74.780400, icon: "fa-store" },
+      { name: "C.C. Carnaval (Autopista Aeropuerto)", city: "Soledad", lat: 10.906240, lng: -74.770806, icon: "fa-masks-theater" },
+      { name: "Plaza Principal de Soledad (Iglesia San Antonio)", city: "Soledad", lat: 10.909722, lng: -74.785833, icon: "fa-church" },
+      { name: "Colegio ITIDA (Calle 30)", city: "Soledad", lat: 10.932000, lng: -74.782000, icon: "fa-school" },
+      { name: "Aeropuerto Internacional Ernesto Cortissoz", city: "Soledad", lat: 10.888569, lng: -74.781767, icon: "fa-plane-departure" },
+      { name: "Parque Hipódromo Soledad", city: "Soledad", lat: 10.941200, lng: -74.772500, icon: "fa-shop" },
 
       // Malambo
-      { name: "Entrada a Malambo / PIMSA (Parque Industrial)", city: "Malambo", lat: 10.8710, lng: -74.7720, icon: "fa-industry" },
-      { name: "Plaza Central de Malambo", city: "Malambo", lat: 10.8590, lng: -74.7750, icon: "fa-tree" },
-      { name: "Batallón Vergara y Velasco", city: "Malambo", lat: 10.8650, lng: -74.7780, icon: "fa-shield-halved" }
+      { name: "Entrada a Malambo / PIMSA Parque Industrial", city: "Malambo", lat: 10.836400, lng: -74.765890, icon: "fa-industry" },
+      { name: "Plaza Central de Malambo", city: "Malambo", lat: 10.859667, lng: -74.772472, icon: "fa-tree" },
+      { name: "Batallón Vergara y Velasco", city: "Malambo", lat: 10.881008, lng: -74.769142, icon: "fa-shield-halved" }
     ];
 
     let plannerDestinationMarker = null;
     let plannerWalkPolyline = null;
     let selectedPlanData = null;
+    let searchDebounceTimer = null;
 
     function renderPlannerChips() {
       const container = document.getElementById('chips-container');
       if (!container) return;
-      container.innerHTML = KEY_PLACES.slice(0, 10).map((p, idx) => `
+      container.innerHTML = KEY_PLACES.slice(0, 12).map((p, idx) => `
         <button onclick="selectDestinationPlace(${idx})" class="flex-shrink-0 px-2.5 py-1 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 font-bold flex items-center gap-1.5 transition active:scale-95 shadow-2xs">
           <i class="fa-solid ${p.icon} text-emerald-600 text-[10px]"></i>
-          <span>${p.name.split('/')[0].trim()}</span>
+          <span>${p.name.split('(')[0].trim()}</span>
           <span class="text-[9px] text-slate-400 font-normal">(${p.city.slice(0, 3)})</span>
         </button>
       `).join('');
@@ -671,20 +673,59 @@
       calculateBestBusRoute(place.lat, place.lng, place.name);
     }
 
-    function handlePlannerSearch(e) {
-      const q = e.target.value.toLowerCase().trim();
+    async function handlePlannerSearch(e) {
+      const q = e.target.value.trim();
       if (!q) {
         document.getElementById('planner-result-card').classList.add('hidden');
         return;
       }
+
       if (e.key === 'Enter') {
-        // Buscar coincidencia en lista o aproximar
-        const match = KEY_PLACES.find(p => p.name.toLowerCase().includes(q) || p.city.toLowerCase().includes(q));
+        const queryLower = q.toLowerCase();
+        // 1. Revisar si coincide con algún sitio clave
+        const match = KEY_PLACES.find(p => p.name.toLowerCase().includes(queryLower) || queryLower.includes(p.name.toLowerCase().split(' ')[0]));
         if (match) {
           calculateBestBusRoute(match.lat, match.lng, match.name);
-        } else {
-          // Destino génerico estimado en Barranquilla
-          calculateBestBusRoute(10.9982, -74.8105, q);
+          return;
+        }
+
+        // 2. Geocodificación 100% Real vía OpenStreetMap Nominatim dentro de Barranquilla, Soledad y Malambo
+        try {
+          const searchParams = new URLSearchParams({
+            q: `${q}, Barranquilla, Atlantico, Colombia`,
+            format: 'jsonv2',
+            limit: '1',
+            viewbox: '-74.9200,10.8200,-74.7000,11.0800',
+            bounded: '1'
+          });
+
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?${searchParams.toString()}`, {
+            headers: { 'Accept-Language': 'es' }
+          });
+          const results = await res.json();
+
+          if (results && results.length > 0) {
+            const r = results[0];
+            const lat = parseFloat(r.lat);
+            const lon = parseFloat(r.lon);
+            const displayName = r.display_name.split(',')[0];
+            calculateBestBusRoute(lat, lon, displayName);
+          } else {
+            // Reintentar sin bounded estricto en Atlántico
+            const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', Atlantico, Colombia')}&format=jsonv2&limit=1`, {
+              headers: { 'Accept-Language': 'es' }
+            });
+            const fallbackResults = await fallbackRes.json();
+            if (fallbackResults && fallbackResults.length > 0) {
+              const r = fallbackResults[0];
+              calculateBestBusRoute(parseFloat(r.lat), parseFloat(r.lon), r.display_name.split(',')[0]);
+            } else {
+              alert(`No pudimos localizar la dirección exacta "${q}". Intenta especificar la calle y carrera (ej: Calle 45 con Cra 1, Murillo con 8, etc.)`);
+            }
+          }
+        } catch (err) {
+          console.error("Error geocodificando dirección:", err);
+          alert("Error consultando el servidor geográfico. Revisa tu conexión.");
         }
       }
     }
@@ -720,7 +761,7 @@
         let bestStop = null;
         let minWalkDistance = Infinity;
 
-        // Inspeccionar paraderos de cada ruta para encontrar el más cercano al destino
+        // Inspeccionar todas las paradas oficiales de todas las rutas del sistema
         for (const r of routes) {
           const detailRes = await fetch(`/api/transmetro/routes/${r.id}`);
           const detail = await detailRes.json();
@@ -739,9 +780,23 @@
           return;
         }
 
-        const startStop = bestRoute.stops[0];
+        // Si el usuario compartió su ubicación GPS, la parada inicial es la más cercana al usuario
+        let startStop = bestRoute.stops[0];
+        if (userMarker) {
+          const uLatLng = userMarker.getLatLng();
+          let minStartDist = Infinity;
+          for (const s of bestRoute.stops) {
+            const distU = calcDistanceMeters(s.lat, s.lng, uLatLng.lat, uLatLng.lng);
+            if (distU < minStartDist) {
+              minStartDist = distU;
+              startStop = s;
+            }
+          }
+        }
+
         const walkMin = Math.max(1, Math.round(minWalkDistance / 75)); // ~75 metros por minuto
-        const busMin = Math.max(4, Math.round((bestStop.order - 1) * 2.5));
+        const stopDifference = Math.abs((bestStop.order || 1) - (startStop.order || 1));
+        const busMin = Math.max(3, Math.round(stopDifference * 2.5));
         const totalMin = busMin + walkMin;
 
         selectedPlanData = {
