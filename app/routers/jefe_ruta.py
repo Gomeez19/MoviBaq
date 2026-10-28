@@ -122,9 +122,32 @@ def reassign_bus_route(
 
 @router.get("/conductors")
 def get_conductors_list(user: dict = Depends(require_role([UserRole.JEFE_RUTA, UserRole.ADMIN]))):
-    """Retorna la lista de todos los conductores registrados y su ruta/bus actual."""
+    """Retorna la lista de todos los conductores registrados y su ruta/bus actual (BD persistente con fallback a mock)."""
+    from app.database import SessionLocal
+    from app.models import Usuario
     from app.routers.auth import MOCK_USERS_DB
+
     conductors = []
+    if SessionLocal:
+        db = SessionLocal()
+        try:
+            db_conds = db.query(Usuario).filter(Usuario.role == UserRole.CONDUCTOR.value, Usuario.is_active == True).all()
+            if db_conds:
+                for u in db_conds:
+                    conductors.append({
+                        "id": u.id,
+                        "fullname": u.fullname,
+                        "email": u.email,
+                        "assigned_bus": u.assigned_bus_id,
+                        "assigned_route": u.assigned_route_id
+                    })
+                return {"status": "success", "conductors": conductors}
+        except Exception as e:
+            print(f"[jefe_ruta /conductors BD Error]: {e}")
+        finally:
+            db.close()
+
+    # Fallback a MOCK
     for email, u in MOCK_USERS_DB.items():
         if u.get("role") == UserRole.CONDUCTOR.value:
             conductors.append({
@@ -143,32 +166,59 @@ def assign_driver_route(
     bus_id: Optional[str] = Body(None, embed=True),
     user: dict = Depends(require_role([UserRole.JEFE_RUTA, UserRole.ADMIN]))
 ):
-    """Permite al Jefe de Ruta asignar o cambiar la ruta y el bus a un conductor específico."""
+    """Permite al Jefe de Ruta asignar o cambiar la ruta y el bus a un conductor específico con persistencia en BD."""
+    from app.database import SessionLocal
+    from app.models import Usuario, Vehiculo
     from app.routers.auth import MOCK_USERS_DB
+
     if route_id not in MOCK_ROUTES:
         raise HTTPException(status_code=404, detail="Ruta no encontrada")
-    
-    target_driver = None
+
+    driver_name = None
+
+    # Intentar actualizar en base de datos PostgreSQL
+    if SessionLocal:
+        db = SessionLocal()
+        try:
+            db_user = db.query(Usuario).filter(Usuario.id == driver_id).first()
+            if db_user:
+                db_user.assigned_route_id = route_id
+                if bus_id:
+                    db_user.assigned_bus_id = bus_id
+                    # Actualizar ruta del vehículo en BD si existe
+                    db_veh = db.query(Vehiculo).filter(Vehiculo.bus_id == bus_id).first()
+                    if db_veh:
+                        db_veh.current_route_id = route_id
+                db.commit()
+                driver_name = db_user.fullname
+        except Exception as e:
+            db.rollback()
+            print(f"[jefe_ruta /assign-driver-route BD Error]: {e}")
+        finally:
+            db.close()
+
+    # Actualizar también en MOCK_USERS_DB y BUS_TRACKER_STATE
     for u in MOCK_USERS_DB.values():
-        if u["id"] == driver_id and u.get("role") == UserRole.CONDUCTOR.value:
-            target_driver = u
+        if u["id"] == driver_id:
+            u["assigned_route"] = route_id
+            if bus_id:
+                u["assigned_bus"] = bus_id
+            if not driver_name:
+                driver_name = u["fullname"]
             break
-            
-    if not target_driver:
+
+    if not driver_name:
         raise HTTPException(status_code=404, detail="Conductor no encontrado")
-        
-    target_driver["assigned_route"] = route_id
-    if bus_id:
-        target_driver["assigned_bus"] = bus_id
-        if bus_id in BUS_TRACKER_STATE:
-            BUS_TRACKER_STATE[bus_id]["route_id"] = route_id
-            BUS_TRACKER_STATE[bus_id]["driver_name"] = target_driver["fullname"]
-            BUS_TRACKER_STATE[bus_id]["path_idx"] = 0
-            BUS_TRACKER_STATE[bus_id]["sub_step"] = 0.0
+
+    if bus_id and bus_id in BUS_TRACKER_STATE:
+        BUS_TRACKER_STATE[bus_id]["route_id"] = route_id
+        BUS_TRACKER_STATE[bus_id]["driver_name"] = driver_name
+        BUS_TRACKER_STATE[bus_id]["path_idx"] = 0
+        BUS_TRACKER_STATE[bus_id]["sub_step"] = 0.0
 
     return {
         "status": "success",
-        "message": f"Conductor {target_driver['fullname']} asignado exitosamente a la ruta {route_id} (Bus: {target_driver.get('assigned_bus', 'Sin bus')})"
+        "message": f"Conductor {driver_name} asignado exitosamente a la ruta {route_id} (Bus: {bus_id or 'Sin bus'})"
     }
 
 @router.post("/send-message")
