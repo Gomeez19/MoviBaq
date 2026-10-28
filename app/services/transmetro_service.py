@@ -297,30 +297,30 @@ MOCK_ROUTES: Dict[str, dict] = {
         "name": "Hipódromo - Metrocentro",
         "type": "Alimentador",
         "color": "#EA580C",  # Vibrant Orange
-        "description": "Conecta la Estación Joaquín Barrios Polo (Metrocentro / Estadio Metropolitano) por Av. Las Torres y Cll 30 con los barrios Hipódromo e ITIDA en Soledad.",
+        "description": "Conecta la Estación Joaquín Barrios Polo (Metrocentro) por Av. Las Torres y Cll 30 con los barrios Hipódromo e ITIDA en Soledad.",
         "frequency_minutes": 6,
         "schedule": "05:00 AM - 10:30 PM",
         "path": [
-            [10.9333, -74.7993],  # Estación Joaquín Barrios Polo (Metrocentro - Estadio Metropolitano)
-            [10.9350, -74.7970],  # Av. Murillo con Cra 1
-            [10.9380, -74.7940],  # Av. Las Torres con Cll 45
-            [10.9350, -74.7890],  # Av. Las Torres con Cll 54
-            [10.9320, -74.7820],  # Cll 30 frente Colegio ITIDA
-            [10.9360, -74.7730],  # Cra 30 con Cll 30 (SAO Hipódromo)
-            [10.9410, -74.7710],  # Cll 18 con Cra 27 (Hipódromo Centro)
-            [10.9440, -74.7750],  # Cra 19 con Cll 23
-            [10.9380, -74.7810],  # Cll 30 retorno (Colegio INEM)
-            [10.9350, -74.7950],  # Av. Las Torres retorno
-            [10.9333, -74.7993]   # Llegada Estación Joaquín Barrios Polo
+            [10.949114, -74.801944],  # Estación Joaquín Barrios Polo (Metrocentro)
+            [10.946069, -74.805501],  # Cll 45D con Cra 1
+            [10.938276, -74.799993],  # Av. Las Torres con Cll 45 / 48
+            [10.935000, -74.795000],  # Av. Las Torres con Cll 54
+            [10.932119, -74.779956],  # Cll 30 frente Colegio ITIDA
+            [10.935974, -74.773012],  # Cra 30 con Cll 30 (SAO Hipódromo)
+            [10.940860, -74.772277],  # Parque Hipódromo / Cll 18 con Cra 27
+            [10.944000, -74.775000],  # Cra 19 con Cll 23
+            [10.937908, -74.780691],  # Cll 30 retorno (Colegio INEM)
+            [10.935000, -74.795000],  # Av. Las Torres retorno
+            [10.949114, -74.801944]   # Llegada Estación Joaquín Barrios Polo
         ],
         "stops": [
-            {"id": "a21_s1", "name": "Estación Joaquín Barrios Polo (Metrocentro / Estadio)", "lat": 10.9333, "lng": -74.7993, "order": 1},
-            {"id": "a21_s2", "name": "Av. Murillo con Cra 1 (Metrocentro)", "lat": 10.9350, "lng": -74.7970, "order": 2},
-            {"id": "a21_s3", "name": "Av. Las Torres con Cll 48", "lat": 10.9380, "lng": -74.7940, "order": 3},
-            {"id": "a21_s4", "name": "Cll 30 (Colegio ITIDA)", "lat": 10.9320, "lng": -74.7820, "order": 4},
-            {"id": "a21_s5", "name": "Cra 30 con Cll 30 (SAO Hipódromo)", "lat": 10.9360, "lng": -74.7730, "order": 5},
-            {"id": "a21_s6", "name": "Cll 18 con Cra 27 (Sector Hipódromo)", "lat": 10.9410, "lng": -74.7710, "order": 6},
-            {"id": "a21_s7", "name": "Cll 30 (Colegio INEM / Entrada Tucán)", "lat": 10.9380, "lng": -74.7810, "order": 7}
+            {"id": "a21_s1", "name": "Estación Joaquín Barrios Polo (Metrocentro)", "lat": 10.949114, "lng": -74.801944, "order": 1},
+            {"id": "a21_s2", "name": "Cll 45D con Cra 1 (Metrocentro)", "lat": 10.946069, "lng": -74.805501, "order": 2},
+            {"id": "a21_s3", "name": "Av. Las Torres con Cll 48", "lat": 10.938276, "lng": -74.799993, "order": 3},
+            {"id": "a21_s4", "name": "Cll 30 (Colegio ITIDA)", "lat": 10.932119, "lng": -74.779956, "order": 4},
+            {"id": "a21_s5", "name": "Cra 30 con Cll 30 (SAO Hipódromo)", "lat": 10.935974, "lng": -74.773012, "order": 5},
+            {"id": "a21_s6", "name": "Cll 18 con Cra 27 (Parque Hipódromo)", "lat": 10.940860, "lng": -74.772277, "order": 6},
+            {"id": "a21_s7", "name": "Cll 30 (Colegio INEM / Entrada Tucán)", "lat": 10.937908, "lng": -74.780691, "order": 7}
         ],
         "bus_seeds": [
             {"bus_id": "TM-2101", "plate": "WPL-842", "path_index": 2, "driver_name": "Jhon Jairo Berdugo"},
@@ -339,23 +339,22 @@ MOCK_ROUTES: Dict[str, dict] = {
         "frequency_minutes": 7,
         "schedule": "05:00 AM - 10:30 PM",
         "path": [
-            [10.9094, -74.7988],  # Portal de Soledad (Murillo Cra 14)
-            [10.9150, -74.7920],  # Cll 63 hacia Cll 30
-            [10.9220, -74.7850],  # Cll 30 con Cra 16
-            [10.9280, -74.7780],  # Cll 30 con Cra 19
-            [10.9340, -74.7730],  # Cra 19 con Cll 24
-            [10.9412, -74.7725],  # Parque Hipódromo
-            [10.9430, -74.7760],  # Cll 24 Soledad Centro
-            [10.9385, -74.7810],  # Cra 15 Retorno
-            [10.9250, -74.7850],  # Cll 30 aproximación
-            [10.9094, -74.7988]   # Portal de Soledad
+            [10.925224, -74.778725],  # Portal de Soledad
+            [10.928000, -74.775000],  # Cll 30 con Cra 16
+            [10.931500, -74.772000],  # Cll 30 con Cra 19
+            [10.936000, -74.769500],  # Cra 19 con Cll 24
+            [10.941200, -74.772500],  # Parque Hipódromo
+            [10.943000, -74.776000],  # Cll 24 Soledad Centro
+            [10.938500, -74.781000],  # Cra 15 Retorno
+            [10.932000, -74.780000],  # Cll 30 aproximación
+            [10.925224, -74.778725]   # Portal de Soledad
         ],
         "stops": [
-            {"id": "a32_s1", "name": "Portal de Soledad (Cabecera)", "lat": 10.9094, "lng": -74.7988, "order": 1},
-            {"id": "a32_s2", "name": "Cll 30 con Cra 19 (Olímpica)", "lat": 10.9280, "lng": -74.7780, "order": 2},
-            {"id": "a32_s3", "name": "Parque Hipódromo", "lat": 10.9412, "lng": -74.7725, "order": 3},
-            {"id": "a32_s4", "name": "Cll 24 Soledad Centro", "lat": 10.9430, "lng": -74.7760, "order": 4},
-            {"id": "a32_s5", "name": "Cra 15 Retorno Portal", "lat": 10.9385, "lng": -74.7810, "order": 5}
+            {"id": "a32_s1", "name": "Portal de Soledad (Cabecera)", "lat": 10.925224, "lng": -74.778725, "order": 1},
+            {"id": "a32_s2", "name": "Cll 30 con Cra 19 (Olímpica)", "lat": 10.927421, "lng": -74.779177, "order": 2},
+            {"id": "a32_s3", "name": "Parque Hipódromo", "lat": 10.941200, "lng": -74.772500, "order": 3},
+            {"id": "a32_s4", "name": "Cll 24 Soledad Centro", "lat": 10.943000, "lng": -74.776000, "order": 4},
+            {"id": "a32_s5", "name": "Cra 15 Retorno Portal", "lat": 10.938500, "lng": -74.781000, "order": 5}
         ],
         "bus_seeds": [
             {"bus_id": "TM-3201", "plate": "WPL-722", "path_index": 2, "driver_name": "Jhon Jairo Berdugo"}
@@ -385,7 +384,7 @@ MOCK_ROUTES: Dict[str, dict] = {
         ],
         "stops": [
             {"id": "a53_s1", "name": "Portal de Soledad (Cabecera)", "lat": 10.9094, "lng": -74.7988, "order": 1},
-            {"id": "a53_s2", "name": "Av. Murillo con Cra 14", "lat": 10.9120, "lng": -74.7950, "order": 2},
+            {"id": "a53_s2", "name": "Av. Murillo con Cra 14", "lat": 10.910660, "lng": -74.795121, "order": 2},
             {"id": "a53_s3", "name": "Entrada Soledad 2000", "lat": 10.9160, "lng": -74.7875, "order": 3},
             {"id": "a53_s4", "name": "Sector La Central Plaza", "lat": 10.9080, "lng": -74.7960, "order": 4},
             {"id": "a53_s5", "name": "Retorno Manuela Beltrán", "lat": 10.9180, "lng": -74.7930, "order": 5}
@@ -395,49 +394,51 @@ MOCK_ROUTES: Dict[str, dict] = {
         ]
     },
 
-    # 11. R1 Troncal Corriente (Portal de Soledad - Murillo - Estadio Metropolitano - Joe Arroyo)
+    # 11. R1 Troncal Corriente (Portal de Soledad - Murillo - Olaya Herrera - Joe Arroyo)
     "R1": {
         "id": "R1",
         "code": "R1",
         "name": "Troncal Corriente (Soledad - Joe Arroyo)",
         "type": "Troncal",
         "color": "#DC2626",  # Red Troncal
-        "description": "Eje troncal principal de Transmetro conectando Portal de Soledad por Av. Murillo pasando frente al Estadio Metropolitano hasta la Estación de Retorno Joe Arroyo.",
+        "description": "Eje troncal principal de Transmetro conectando Portal de Soledad por Av. Murillo y Cra 46 (Olaya Herrera) hasta la Estación de Retorno Joe Arroyo.",
         "frequency_minutes": 4,
         "schedule": "05:00 AM - 11:00 PM",
         "path": [
-            [10.9094, -74.7988],  # Portal de Soledad
-            [10.9135, -74.7938],  # Pacho Galán
-            [10.9255, -74.8093],  # Pedro Ramayá
-            [10.9333, -74.7993],  # Joaquín Barrios Polo (Estadio Metropolitano)
-            [10.9412, -74.7975],  # Buenos Aires
-            [10.9464, -74.7997],  # La Ocho
-            [10.9482, -74.8012],  # La Catorce
-            [10.9535, -74.8049],  # La Veintiuna
-            [10.9601, -74.8090],  # Atlántico
-            [10.9678, -74.8145],  # Chiquinquirá
-            [10.9760, -74.8198],  # La Arenosa
-            [10.9878, -74.7889],  # La Catedral (Cra 46)
-            [10.9902, -74.7959],  # Alfredo Correa de Andréis
-            [10.9928, -74.8030],  # Esthercita Forero
-            [10.9952, -74.8075]   # Estación de Retorno Joe Arroyo
+            [10.9093, -74.7997],  # Portal de Soledad
+            [10.9145, -74.7912],  # Pacho Galán
+            [10.9192, -74.7865],  # Pedro Ramayá
+            [10.9231, -74.7818],  # Joaquín Barrios Polo (Estadio Metropolitano)
+            [10.9274, -74.7763],  # Buenos Aires
+            [10.9332, -74.7725],  # La Ocho
+            [10.9389, -74.7701],  # La Catorce
+            [10.9450, -74.7712],  # La Veintiuna
+            [10.9515, -74.7748],  # Atlántico
+            [10.9572, -74.7791],  # Chiquinquirá
+            [10.9631, -74.7834],  # La Arenosa
+            [10.9741, -74.7849],  # Parque Cultural del Caribe
+            [10.9785, -74.7862],  # Barrio Abajo
+            [10.9883, -74.7904],  # La Catedral (Cra 46)
+            [10.9935, -74.7918],  # Alfredo Correa de Andréis
+            [10.9989, -74.7942],  # Esthercita Forero
+            [11.0051, -74.7975]   # Estación de Retorno Joe Arroyo
         ],
         "stops": [
-            {"id": "r1_s1", "name": "Portal de Soledad", "lat": 10.9094, "lng": -74.7988, "order": 1},
-            {"id": "r1_s2", "name": "Estación Pacho Galán", "lat": 10.9135, "lng": -74.7938, "order": 2},
-            {"id": "r1_s3", "name": "Estación Pedro Ramayá", "lat": 10.9255, "lng": -74.8093, "order": 3},
-            {"id": "r1_s4", "name": "Estación Joaquín Barrios Polo (Estadio Metropolitano)", "lat": 10.9333, "lng": -74.7993, "order": 4},
-            {"id": "r1_s5", "name": "Estación Buenos Aires", "lat": 10.9412, "lng": -74.7975, "order": 5},
-            {"id": "r1_s6", "name": "Estación La Ocho", "lat": 10.9464, "lng": -74.7997, "order": 6},
-            {"id": "r1_s7", "name": "Estación La Catorce", "lat": 10.9482, "lng": -74.8012, "order": 7},
-            {"id": "r1_s8", "name": "Estación La Veintiuna", "lat": 10.9535, "lng": -74.8049, "order": 8},
-            {"id": "r1_s9", "name": "Estación Atlántico", "lat": 10.9601, "lng": -74.8090, "order": 9},
-            {"id": "r1_s10", "name": "Estación Chiquinquirá", "lat": 10.9678, "lng": -74.8145, "order": 10},
-            {"id": "r1_s11", "name": "Estación La Arenosa", "lat": 10.9760, "lng": -74.8198, "order": 11},
-            {"id": "r1_s12", "name": "Estación La Catedral", "lat": 10.9878, "lng": -74.7889, "order": 12},
-            {"id": "r1_s13", "name": "Estación Alfredo Correa de Andréis", "lat": 10.9902, "lng": -74.7959, "order": 13},
-            {"id": "r1_s14", "name": "Estación Esthercita Forero", "lat": 10.9928, "lng": -74.8030, "order": 14},
-            {"id": "r1_s15", "name": "Estación de Retorno Joe Arroyo", "lat": 10.9952, "lng": -74.8075, "order": 15}
+            {"id": "r1_s1", "name": "Portal de Soledad", "lat": 10.9093, "lng": -74.7997, "order": 1},
+            {"id": "r1_s2", "name": "Estación Pacho Galán", "lat": 10.9145, "lng": -74.7912, "order": 2},
+            {"id": "r1_s3", "name": "Estación Pedro Ramayá", "lat": 10.9192, "lng": -74.7865, "order": 3},
+            {"id": "r1_s4", "name": "Estación Joaquín Barrios Polo (Estadio Metropolitano)", "lat": 10.9231, "lng": -74.7818, "order": 4},
+            {"id": "r1_s5", "name": "Estación Buenos Aires", "lat": 10.9274, "lng": -74.7763, "order": 5},
+            {"id": "r1_s6", "name": "Estación La Ocho", "lat": 10.9332, "lng": -74.7725, "order": 6},
+            {"id": "r1_s7", "name": "Estación La Catorce", "lat": 10.9389, "lng": -74.7701, "order": 7},
+            {"id": "r1_s8", "name": "Estación La Veintiuna", "lat": 10.9450, "lng": -74.7712, "order": 8},
+            {"id": "r1_s9", "name": "Estación Atlántico", "lat": 10.9515, "lng": -74.7748, "order": 9},
+            {"id": "r1_s10", "name": "Estación Chiquinquirá", "lat": 10.9572, "lng": -74.7791, "order": 10},
+            {"id": "r1_s11", "name": "Estación La Arenosa", "lat": 10.9631, "lng": -74.7834, "order": 11},
+            {"id": "r1_s12", "name": "Estación La Catedral", "lat": 10.9883, "lng": -74.7904, "order": 12},
+            {"id": "r1_s13", "name": "Estación Alfredo Correa de Andréis", "lat": 10.9935, "lng": -74.7918, "order": 13},
+            {"id": "r1_s14", "name": "Estación Esthercita Forero", "lat": 10.9989, "lng": -74.7942, "order": 14},
+            {"id": "r1_s15", "name": "Estación de Retorno Joe Arroyo", "lat": 11.0051, "lng": -74.7975, "order": 15}
         ],
         "bus_seeds": [
             {"bus_id": "TM-1001", "plate": "WPL-991", "path_index": 3, "driver_name": "Carlos Bacca"},

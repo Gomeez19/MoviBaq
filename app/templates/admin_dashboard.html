@@ -703,10 +703,13 @@
     }
 
     // ─── CARGA DE DATOS ──────────────────────────────
-    let allUsers = [], allFleet = [];
+    let allUsers = [], allFleet = [], allStops = [], allRoutes = [];
+    let adminMap = null;
+    let adminStopMarker = null;
+    let adminRoutePolyline = null;
 
     async function loadAdminData() {
-      await Promise.all([loadFleet(), loadUsers()]);
+      await Promise.all([loadFleet(), loadUsers(), loadRoutesList(), loadStops()]);
     }
 
     async function loadFleet() {
@@ -917,15 +920,7 @@
       openModal('modal-delete');
     }
 
-    // ─── CARGA DE DATOS ──────────────────────────────
-    let allUsers = [], allFleet = [], allStops = [], allRoutes = [];
-    let adminMap = null;
-    let adminStopMarker = null;
-    let adminRoutePolyline = null;
-
-    async function loadAdminData() {
-      await Promise.all([loadFleet(), loadUsers(), loadRoutesList(), loadStops()]);
-    }
+    // ─── CARGA DE DATOS COMPLETA ─────────────────────
 
     async function loadRoutesList() {
       try {
