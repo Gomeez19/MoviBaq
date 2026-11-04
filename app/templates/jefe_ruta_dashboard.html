@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ title }}</title>
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -20,11 +21,12 @@
   </script>
 
   <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
+
 <body class="bg-slate-100 min-h-screen flex flex-col font-sans text-slate-800">
 
   <!-- Franja Bandera Barranquilla -->
@@ -38,12 +40,14 @@
   <header class="bg-white border-b border-slate-200 sticky top-1.5 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-slate-900 text-baq-yellow flex items-center justify-center font-bold shadow">
+        <div
+          class="w-10 h-10 rounded-xl bg-slate-900 text-baq-yellow flex items-center justify-center font-bold shadow">
           <i class="fa-solid fa-tower-broadcast text-lg"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-base font-extrabold text-slate-900 leading-tight">Centro de Control de Operaciones (CCO)</h1>
+            <h1 class="text-base font-extrabold text-slate-900 leading-tight">Centro de Control de Operaciones (CCO)
+            </h1>
             <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-transmetro rounded-full">Jefe de Ruta</span>
           </div>
           <p class="text-xs text-slate-400">Monitoreo de Alimentadores Transmetro Barranquilla</p>
@@ -55,7 +59,8 @@
           <p class="text-xs font-bold text-slate-800">{{ user.fullname }}</p>
           <p class="text-[10px] text-slate-400">Despachador en Turno</p>
         </div>
-        <button onclick="handleLogout()" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl transition flex items-center gap-1.5">
+        <button onclick="handleLogout()"
+          class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl transition flex items-center gap-1.5">
           <i class="fa-solid fa-right-from-bracket"></i>
           <span>Salir</span>
         </button>
@@ -95,13 +100,15 @@
 
   <!-- Contenido Central: Mapa Global y Paneles de Control -->
   <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 flex-grow">
-    
+
     <!-- Mapa Operativo Global CCO -->
-    <section class="w-full lg:w-7/12 flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[480px]">
+    <section
+      class="w-full lg:w-7/12 flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[480px]">
       <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Mapa Operativo Satelital en Tiempo Real</h2>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Mapa Operativo Satelital en Tiempo Real
+          </h2>
         </div>
         <span class="text-xs font-mono text-slate-400" id="last-update-clock">Refresco: Activo</span>
       </div>
@@ -110,7 +117,7 @@
 
     <!-- Paneles Laterales: Regulación, Reasignación e Incidentes -->
     <aside class="w-full lg:w-5/12 flex flex-col gap-5">
-      
+
       <!-- Panel de Mensajes de Regulación a Conductores -->
       <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2 mb-3">
@@ -121,13 +128,15 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bus Destino</label>
-              <select id="msg-bus-target" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+              <select id="msg-bus-target"
+                class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
                 <!-- Se poblará dinámicamente -->
               </select>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Acción Rápida</label>
-              <select onchange="document.getElementById('msg-text-input').value = this.value" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+              <select onchange="document.getElementById('msg-text-input').value = this.value"
+                class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                 <option value="">Seleccionar preset...</option>
                 <option value="Regular velocidad: Mantener intervalo de 5 min.">Regular velocidad (+5 min)</option>
                 <option value="Acelerar paso para cubrir brecha de frecuencia.">Acelerar paso</option>
@@ -137,8 +146,10 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <input type="text" id="msg-text-input" placeholder="Escribe mensaje directo a la cabina..." class="flex-grow p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-            <button onclick="sendRegulationMessage()" class="px-4 py-2.5 bg-transmetro hover:bg-transmetro-dark text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            <input type="text" id="msg-text-input" placeholder="Escribe mensaje directo a la cabina..."
+              class="flex-grow p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <button onclick="sendRegulationMessage()"
+              class="px-4 py-2.5 bg-transmetro hover:bg-transmetro-dark text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
               <i class="fa-solid fa-paper-plane text-[10px]"></i>
               <span>Enviar</span>
             </button>
@@ -155,18 +166,21 @@
         <div class="grid grid-cols-2 gap-2 mb-3">
           <div>
             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Padrón / Bus</label>
-            <select id="reassign-bus-id" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+            <select id="reassign-bus-id"
+              class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
               <!-- Se poblará dinámicamente -->
             </select>
           </div>
           <div>
             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nueva Ruta Refuerzo</label>
-            <select id="reassign-new-route" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+            <select id="reassign-new-route"
+              class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
               <!-- Se poblará dinámicamente -->
             </select>
           </div>
         </div>
-        <button onclick="executeReassignment()" class="w-full py-2 bg-slate-800 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+        <button onclick="executeReassignment()"
+          class="w-full py-2 bg-slate-800 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
           <i class="fa-solid fa-check"></i>
           <span>Aplicar Reasignación de Bus</span>
         </button>
@@ -181,12 +195,14 @@
           </h3>
           <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-transmetro rounded-full">CCO Direct</span>
         </div>
-        <p class="text-[11px] text-slate-500 mb-3">Elige un conductor en turno y asígnale su ruta operativa y padrón vehicular.</p>
-        
+        <p class="text-[11px] text-slate-500 mb-3">Elige un conductor en turno y asígnale su ruta operativa y padrón
+          vehicular.</p>
+
         <div class="space-y-2.5 mb-3">
           <div>
             <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Seleccionar Conductor</label>
-            <select id="assign-driver-select" onchange="onDriverSelected(this.value)" class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
+            <select id="assign-driver-select" onchange="onDriverSelected(this.value)"
+              class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
               <!-- Cargado dinámicamente -->
             </select>
           </div>
@@ -194,20 +210,23 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Ruta Asignada</label>
-              <select id="assign-route-select" class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
+              <select id="assign-route-select"
+                class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
                 <!-- Se poblará dinámicamente -->
               </select>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Vehículo Padrón</label>
-              <select id="assign-bus-select" class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
+              <select id="assign-bus-select"
+                class="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800">
                 <!-- Se poblará dinámicamente -->
               </select>
             </div>
           </div>
         </div>
 
-        <button onclick="executeDriverAssignment()" class="w-full py-2.5 bg-transmetro hover:bg-transmetro-dark text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
+        <button onclick="executeDriverAssignment()"
+          class="w-full py-2.5 bg-transmetro hover:bg-transmetro-dark text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
           <i class="fa-solid fa-id-card-clip"></i>
           <span>Guardar Asignación de Conductor</span>
         </button>
@@ -239,7 +258,8 @@
             <i class="fa-solid fa-tower-broadcast text-xs"></i>
           </div>
           <div>
-            <p class="text-sm font-extrabold text-white">Movi<span class="text-transmetro">BAQ</span> Centro de Control CCO</p>
+            <p class="text-sm font-extrabold text-white">Movi<span class="text-transmetro">BAQ</span> Centro de Control
+              CCO</p>
             <p class="text-[11px] text-slate-500">Mesa de Regulación Distrital • Alcaldía de Barranquilla</p>
           </div>
         </div>
@@ -400,6 +420,15 @@
         routesData = await routesRes.json();
         fleetData = await fleetRes.json();
 
+        if (!Array.isArray(routesData)) {
+          console.warn("routesData no es un arreglo:", routesData);
+          routesData = [];
+        }
+        if (!Array.isArray(fleetData)) {
+          console.warn("fleetData no es un arreglo:", fleetData);
+          fleetData = [];
+        }
+
         // 1. Poblar selects de Rutas
         const reassignRouteSelect = document.getElementById('reassign-new-route');
         const assignRouteSelect = document.getElementById('assign-route-select');
@@ -486,7 +515,7 @@
       const driverId = document.getElementById('assign-driver-select').value;
       const routeId = document.getElementById('assign-route-select').value;
       const busId = document.getElementById('assign-bus-select').value;
-      
+
       const res = await fetch('/api/jefe-ruta/assign-driver-route', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -506,13 +535,14 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', async () => {
-      initCcoMap();
-      await loadRoutesAndFleet();
-      await loadConductorsList();
-      fetchFleetOverview();
-      setInterval(fetchFleetOverview, 3000);
-    });
+      window.addEventListener('DOMContentLoaded', async () => {
+        initCcoMap();
+        await loadRoutesAndFleet();
+        await loadConductorsList();
+        fetchFleetOverview();
+        setInterval(fetchFleetOverview, 3000);
+      });
   </script>
 </body>
+
 </html>

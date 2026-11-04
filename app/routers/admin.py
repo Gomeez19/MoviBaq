@@ -214,7 +214,7 @@ def delete_user(
 # ─────────────────────────────────────────────
 
 @router.get("/fleet")
-def get_fleet_vehicles(user: dict = Depends(require_role([UserRole.ADMIN]))):
+def get_fleet_vehicles(user: dict = Depends(require_role([UserRole.ADMIN, UserRole.JEFE_RUTA]))):
     """Lista toda la flota de vehículos desde la BD."""
     db = get_db_session()
     if db:
