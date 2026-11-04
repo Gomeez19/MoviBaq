@@ -27,8 +27,31 @@ router = APIRouter(prefix="/api/conductor", tags=["Portal Conductor Transmetro"]
 
 @router.get("/shift-info")
 def get_shift_info(user: dict = Depends(require_role([UserRole.CONDUCTOR, UserRole.ADMIN]))):
-    bus_id = user.get("assigned_bus", "TM-3201")
-    route_id = user.get("assigned_route", "A3-2")
+    # Buscar asignación más fresca desde la BD
+    bus_id = user.get("assigned_bus")
+    route_id = user.get("assigned_route")
+
+    try:
+        from app.database import SessionLocal
+        from app.models import Usuario
+        if SessionLocal:
+            db = SessionLocal()
+            try:
+                db_user = db.query(Usuario).filter(Usuario.id == user["id"]).first()
+                if db_user:
+                    if db_user.assigned_bus_id:
+                        bus_id = db_user.assigned_bus_id
+                    if db_user.assigned_route_id:
+                        route_id = db_user.assigned_route_id
+            finally:
+                db.close()
+    except Exception as err:
+        print(f"[ShiftInfo BD Error]: {err}")
+
+    # Si aún no tiene asignado, fallback
+    bus_id = bus_id or "TM-3201"
+    route_id = route_id or "A3-2"
+
     route = MOCK_ROUTES.get(route_id, {})
     bus_state = BUS_TRACKER_STATE.get(bus_id, {})
 

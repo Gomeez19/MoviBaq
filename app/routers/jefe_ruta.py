@@ -122,19 +122,56 @@ def reassign_bus_route(
 
 @router.get("/conductors")
 def get_conductors_list(user: dict = Depends(require_role([UserRole.JEFE_RUTA, UserRole.ADMIN]))):
-    """Retorna la lista de todos los conductores registrados y su ruta/bus actual."""
+    """Retorna la lista de todos los conductores registrados en la BD y en memoria."""
     from app.routers.auth import MOCK_USERS_DB
-    conductors = []
+    conductors_map = {}
+
+    # 1. Buscar en BD Neon primero
+    try:
+        from app.database import SessionLocal
+        from app.models import Usuario
+        if SessionLocal:
+            db = SessionLocal()
+            try:
+                # Obtenemos usuarios con rol conductor (o que tengan asignación de bus/ruta)
+                db_conductors = db.query(Usuario).filter(
+                    Usuario.role.ilike("%conductor%"),
+                    Usuario.is_active == True
+                ).all()
+
+                for u in db_conductors:
+                    conductors_map[u.id] = {
+                        "id": u.id,
+                        "fullname": u.fullname,
+                        "email": u.email,
+                        "assigned_bus": u.assigned_bus_id,
+                        "assigned_route": u.assigned_route_id
+                    }
+            finally:
+                db.close()
+    except Exception as e:
+        print(f"[JefeRuta /conductors BD Error]: {e}")
+
+    # 2. Complementar con MOCK_USERS_DB
     for email, u in MOCK_USERS_DB.items():
         if u.get("role") == UserRole.CONDUCTOR.value:
-            conductors.append({
-                "id": u["id"],
-                "fullname": u["fullname"],
-                "email": u["email"],
-                "assigned_bus": u.get("assigned_bus"),
-                "assigned_route": u.get("assigned_route")
-            })
-    return {"status": "success", "conductors": conductors}
+            uid = u["id"]
+            if uid not in conductors_map:
+                conductors_map[uid] = {
+                    "id": u["id"],
+                    "fullname": u["fullname"],
+                    "email": u["email"],
+                    "assigned_bus": u.get("assigned_bus"),
+                    "assigned_route": u.get("assigned_route")
+                }
+            else:
+                # Si en memoria tiene una asignación más reciente, preservarla
+                if u.get("assigned_bus"):
+                    conductors_map[uid]["assigned_bus"] = u.get("assigned_bus")
+                if u.get("assigned_route"):
+                    conductors_map[uid]["assigned_route"] = u.get("assigned_route")
+
+    return {"status": "success", "conductors": list(conductors_map.values())}
 
 @router.post("/assign-driver-route")
 def assign_driver_route(
@@ -143,32 +180,73 @@ def assign_driver_route(
     bus_id: Optional[str] = Body(None, embed=True),
     user: dict = Depends(require_role([UserRole.JEFE_RUTA, UserRole.ADMIN]))
 ):
-    """Permite al Jefe de Ruta asignar o cambiar la ruta y el bus a un conductor específico."""
+    """Permite al Jefe de Ruta asignar o cambiar la ruta y el bus a un conductor específico, guardando en BD y memoria."""
     from app.routers.auth import MOCK_USERS_DB
     if route_id not in MOCK_ROUTES:
         raise HTTPException(status_code=404, detail="Ruta no encontrada")
     
-    target_driver = None
+    driver_name = "Conductor"
+    driver_found = False
+
+    # 1. Actualizar en Base de Datos Neon
+    try:
+        from app.database import SessionLocal
+        from app.models import Usuario
+        if SessionLocal:
+            db = SessionLocal()
+            try:
+                db_user = db.query(Usuario).filter(Usuario.id == driver_id).first()
+                if db_user:
+                    db_user.assigned_route_id = route_id
+                    db_user.assigned_bus_id = bus_id
+                    db.commit()
+                    driver_name = db_user.fullname
+                    driver_found = True
+                    # Mantener en MOCK_USERS_DB
+                    if db_user.email in MOCK_USERS_DB:
+                        MOCK_USERS_DB[db_user.email]["assigned_route"] = route_id
+                        MOCK_USERS_DB[db_user.email]["assigned_bus"] = bus_id
+            finally:
+                db.close()
+    except Exception as db_err:
+        print(f"[AssignDriver BD Error]: {db_err}")
+
+    # 2. Actualizar en MOCK_USERS_DB si no fue por BD o sincronizar
     for u in MOCK_USERS_DB.values():
-        if u["id"] == driver_id and u.get("role") == UserRole.CONDUCTOR.value:
-            target_driver = u
+        if u["id"] == driver_id:
+            u["assigned_route"] = route_id
+            u["assigned_bus"] = bus_id
+            driver_name = u["fullname"]
+            driver_found = True
             break
             
-    if not target_driver:
+    if not driver_found:
         raise HTTPException(status_code=404, detail="Conductor no encontrado")
-        
-    target_driver["assigned_route"] = route_id
+
+    # 3. Actualizar estado del bus
     if bus_id:
-        target_driver["assigned_bus"] = bus_id
-        if bus_id in BUS_TRACKER_STATE:
+        if bus_id not in BUS_TRACKER_STATE:
+            BUS_TRACKER_STATE[bus_id] = {
+                "route_id": route_id,
+                "plate": "WPL-000",
+                "path_idx": 0,
+                "sub_step": 0.0,
+                "speed_kmh": 0.0,
+                "occupancy": 0,
+                "driver_name": driver_name,
+                "status": "Disponible",
+                "in_shift": True,
+                "manual_gps": False
+            }
+        else:
             BUS_TRACKER_STATE[bus_id]["route_id"] = route_id
-            BUS_TRACKER_STATE[bus_id]["driver_name"] = target_driver["fullname"]
+            BUS_TRACKER_STATE[bus_id]["driver_name"] = driver_name
             BUS_TRACKER_STATE[bus_id]["path_idx"] = 0
             BUS_TRACKER_STATE[bus_id]["sub_step"] = 0.0
 
     return {
         "status": "success",
-        "message": f"Conductor {target_driver['fullname']} asignado exitosamente a la ruta {route_id} (Bus: {target_driver.get('assigned_bus', 'Sin bus')})"
+        "message": f"Conductor {driver_name} asignado exitosamente a la ruta {route_id} (Bus: {bus_id or 'Sin bus'})"
     }
 
 @router.post("/send-message")

@@ -512,20 +512,21 @@ if os.path.exists(STREET_GEOMETRY_FILE):
 
 def init_tracker():
     global BUS_TRACKER_STATE
+    # Iniciar vacío o solo con buses disponibles sin GPS ficticio activo.
+    # En modo de prueba real, solo los buses con conductor en vivo y GPS activo emiten ubicación.
     for route_id, route_data in MOCK_ROUTES.items():
-        path = route_data["path"]
-        for seed in route_data["bus_seeds"]:
+        for seed in route_data.get("bus_seeds", []):
             bid = seed["bus_id"]
             BUS_TRACKER_STATE[bid] = {
                 "route_id": route_id,
                 "plate": seed["plate"],
-                "path_idx": seed["path_index"],
+                "path_idx": 0,
                 "sub_step": 0.0,
-                "speed_kmh": 28.0,
-                "occupancy": 65,
-                "driver_name": seed.get("driver_name", "Conductor Oficial"),
-                "status": "En Ruta",
-                "in_shift": True,
+                "speed_kmh": 0.0,
+                "occupancy": 0,
+                "driver_name": seed.get("driver_name", "Sin conductor"),
+                "status": "Disponible",
+                "in_shift": False,
                 "manual_gps": False
             }
 
@@ -549,80 +550,50 @@ def get_all_routes_summary() -> List[dict]:
     ]
 
 def step_bus_simulation(route_id: Optional[str] = None) -> List[BusLiveStatus]:
+    """
+    Retorna la telemetría GPS de los buses.
+    MODO PRUEBA REAL: Únicamente retorna buses que tengan transmisión GPS activa (manual_gps == True),
+    es decir, conducidos por usuarios reales con su smartphone/equipo transmitiendo.
+    Si nadie está transmitiendo en una ruta, no se inventa ningún bus simulado.
+    """
     results: List[BusLiveStatus] = []
     
     for bus_id, state in BUS_TRACKER_STATE.items():
         if route_id and state["route_id"] != route_id:
             continue
-            
-        route = MOCK_ROUTES[state["route_id"]]
-        path = route["path"]
-        stops = route["stops"]
-        
-        # Si el conductor no está forzando GPS manual, simular avance suave
+
+        # Solo incluir buses que tengan coordenadas reales y estén transmitiendo
         if not state.get("manual_gps", False):
-            state["sub_step"] += 0.15 + (random.random() * 0.05)
-            if state["sub_step"] >= 1.0:
-                state["sub_step"] = 0.0
-                state["path_idx"] = (state["path_idx"] + 1) % (len(path) - 1)
-                state["occupancy"] = min(98, max(20, state["occupancy"] + random.randint(-5, 6)))
-                state["speed_kmh"] = round(max(15.0, min(48.0, state["speed_kmh"] + random.uniform(-4, 4))), 1)
+            continue
+            
+        route = MOCK_ROUTES.get(state["route_id"])
+        if not route:
+            continue
 
-            idx = state["path_idx"]
-            next_idx = (idx + 1) % len(path)
-            p1 = path[idx]
-            p2 = path[next_idx]
+        stops = route["stops"]
+        lat = state.get("current_lat")
+        lng = state.get("current_lng")
+        if lat is None or lng is None:
+            continue
 
-            t = state["sub_step"]
-            lat = round(p1[0] + (p2[0] - p1[0]) * t, 6)
-            lng = round(p1[1] + (p2[1] - p1[1]) * t, 6)
-
-            d_lat = p2[0] - p1[0]
-            d_lng = p2[1] - p1[1]
-            heading = round((math.degrees(math.atan2(d_lng, d_lat)) + 360) % 360, 1)
-            state["current_lat"] = lat
-            state["current_lng"] = lng
-            state["heading"] = heading
-        else:
-            lat = state["current_lat"]
-            lng = state["current_lng"]
-            heading = state.get("heading", 0.0)
-            idx = state.get("path_idx", 0)
-
-        nearest_stop = stops[idx % len(stops)]["name"]
+        heading = state.get("heading", 0.0)
+        idx = state.get("path_idx", 0)
+        nearest_stop = stops[idx % len(stops)]["name"] if stops else "En recorrido"
         
-        # Cálculo realista de ETA y distancia restante hasta la parada cabecera/siguiente
-        # Si path tiene cientos de puntos OSM, normalizar el progreso por porcentaje de recorrido
-        progress_ratio = (idx + state.get("sub_step", 0.0)) / max(1, len(path))
-        remaining_ratio = max(0.05, 1.0 - progress_ratio)
-        
-        # Tiempo de ciclo total típico de ruta alimentadora/troncal: 25 a 35 minutos
-        total_cycle_minutes = route.get("frequency_minutes", 7) * 3.5
-        eta_min = max(1, min(25, int(remaining_ratio * total_cycle_minutes)))
-        dist_m = int(eta_min * 350)  # velocidad media urbana (~21 km/h = 350 m/min)
-
-        # Estado textual
+        speed = state.get("speed_kmh", 0.0)
         operational_state = state.get("status", "En Ruta")
-        if operational_state != "En Ruta":
-            status_text = operational_state
-        elif eta_min <= 2:
-            status_text = "Cerca a tu paradero"
-        elif eta_min > 12:
-            status_text = "Demorado por congestión"
-        else:
-            status_text = "En camino"
 
         results.append(BusLiveStatus(
             bus_id=bus_id,
-            plate=state["plate"],
+            plate=state.get("plate", "WPL-000"),
             current_lat=lat,
             current_lng=lng,
-            speed_kmh=state["speed_kmh"],
+            speed_kmh=speed,
             next_stop=nearest_stop,
-            eta_minutes=eta_min,
-            distance_meters=dist_m,
-            status=status_text,
-            occupancy_percent=state["occupancy"],
+            eta_minutes=max(1, int(15 - min(14, speed / 4))),
+            distance_meters=int(max(100, 1500 - min(1400, speed * 25))),
+            status=operational_state,
+            occupancy_percent=state.get("occupancy", 50),
             heading=heading,
             driver_name=state.get("driver_name", "Conductor Oficial")
         ))
