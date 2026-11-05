@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ title }}</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="alternate icon" href="/static/favicon.svg">
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -41,8 +43,8 @@
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
       <a href="/" class="flex items-center gap-3 group">
-        <div class="w-10 h-10 rounded-xl bg-transmetro flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-          <i class="fa-solid fa-bus text-lg"></i>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform overflow-hidden">
+          <img src="/static/logo.svg" alt="MoviBAQ Logo" class="w-full h-full object-cover">
         </div>
         <div>
           <span class="text-xl font-extrabold tracking-tight text-slate-800">Movi<span class="text-transmetro">BAQ</span></span>
