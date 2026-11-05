@@ -133,9 +133,10 @@ def get_conductors_list(user: dict = Depends(require_role([UserRole.JEFE_RUTA, U
         if SessionLocal:
             db = SessionLocal()
             try:
-                # Obtenemos usuarios con rol conductor (o que tengan asignación de bus/ruta)
+                # En PostgreSQL Neon, la columna role es tipo ENUM ('user_role_enum')
+                # Por eso se debe comparar directamente con el valor exacto 'conductor'
                 db_conductors = db.query(Usuario).filter(
-                    Usuario.role.ilike("%conductor%"),
+                    Usuario.role == "conductor",
                     Usuario.is_active == True
                 ).all()
 
