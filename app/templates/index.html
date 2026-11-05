@@ -553,6 +553,14 @@
         const response = await fetch(`/api/transmetro/buses/live?route_id=${currentRouteId}`);
         const buses = await response.json();
 
+        const currentBusIds = new Set(buses.map(b => b.bus_id));
+        Object.keys(busMarkers).forEach(id => {
+          if (!currentBusIds.has(id)) {
+            map.removeLayer(busMarkers[id]);
+            delete busMarkers[id];
+          }
+        });
+
         if (buses.length > 0) {
           const primaryBus = buses[0];
 
@@ -562,11 +570,12 @@
           document.getElementById('bus-speed-badge').textContent = `${primaryBus.speed_kmh} km/h`;
           document.getElementById('bus-plate-txt').textContent = `Bus: ${primaryBus.bus_id} (${primaryBus.plate})`;
           document.getElementById('bus-occupancy-txt').textContent = `Ocupación: ${primaryBus.occupancy_percent}%`;
-          document.getElementById('next-stop-txt').textContent = primaryBus.next_stop_name;
+          document.getElementById('next-stop-txt').textContent = primaryBus.next_stop || 'En recorrido';
           document.getElementById('occupancy-bar').style.width = `${primaryBus.occupancy_percent}%`;
 
           // Actualizar marcadores de buses en Leaflet
           buses.forEach(b => {
+            const nextStopText = b.next_stop || 'En recorrido';
             if (!busMarkers[b.bus_id]) {
               const m = L.marker([b.current_lat, b.current_lng], {
                 icon: createBusIcon()
@@ -578,17 +587,36 @@
                     <i class="fa-solid fa-bus"></i>
                     <span>${b.bus_id} • ${b.plate}</span>
                   </div>
-                  <p class="text-slate-600 mt-1 font-medium">Conductor: ${b.driver_name}</p>
+                  <p class="text-slate-600 mt-1 font-medium">Conductor: <strong>${b.driver_name}</strong></p>
                   <p class="text-slate-600 font-medium">Velocidad: <strong>${b.speed_kmh} km/h</strong></p>
-                  <p class="text-slate-600 font-medium">Próxima Parada: <strong>${b.next_stop_name}</strong></p>
+                  <p class="text-slate-600 font-medium">Próxima Parada: <strong>${nextStopText}</strong></p>
                   <p class="text-emerald-700 font-bold mt-1">Llegada estimada: ${b.eta_minutes} min</p>
                 </div>
               `);
               busMarkers[b.bus_id] = m;
             } else {
               busMarkers[b.bus_id].setLatLng([b.current_lat, b.current_lng]);
+              busMarkers[b.bus_id].setPopupContent(`
+                <div class="p-1 text-xs">
+                  <div class="flex items-center gap-1.5 font-black text-transmetro">
+                    <i class="fa-solid fa-bus"></i>
+                    <span>${b.bus_id} • ${b.plate}</span>
+                  </div>
+                  <p class="text-slate-600 mt-1 font-medium">Conductor: <strong>${b.driver_name}</strong></p>
+                  <p class="text-slate-600 font-medium">Velocidad: <strong>${b.speed_kmh} km/h</strong></p>
+                  <p class="text-slate-600 font-medium">Próxima Parada: <strong>${nextStopText}</strong></p>
+                  <p class="text-emerald-700 font-bold mt-1">Llegada estimada: ${b.eta_minutes} min</p>
+                </div>
+              `);
             }
           });
+        } else {
+          document.getElementById('eta-minutes').textContent = '--';
+          document.getElementById('eta-distance').textContent = '-- m';
+          document.getElementById('bus-status-txt').textContent = 'Esperando inicio de recorrido...';
+          document.getElementById('bus-speed-badge').textContent = '0 km/h';
+          document.getElementById('bus-plate-txt').textContent = 'Sin bus transmitiendo';
+          document.getElementById('next-stop-txt').textContent = 'Sin unidad en vía';
         }
       } catch (err) {
         console.error("Error al actualizar buses:", err);

@@ -221,10 +221,12 @@ def send_driver_gps(
     user: dict = Depends(require_role([UserRole.CONDUCTOR, UserRole.ADMIN]))
 ):
     """
-    Simulación o envío real de coordenadas GPS emitidas por el smartphone/tablet del conductor.
-    Actualiza la ubicación vista en tiempo real por pasajeros y jefe de ruta.
+    Envío real de coordenadas GPS emitidas por el smartphone/tablet del conductor autenticado.
+    Actualiza la ubicación vista en tiempo real por pasajeros y jefe de ruta,
+    asociando el nombre real del conductor autenticado.
     """
-    update_driver_gps(payload)
+    driver_name = user.get("fullname", "Conductor Oficial")
+    update_driver_gps(payload, driver_name=driver_name)
     return {"status": "success", "message": "Telemetría GPS actualizada"}
 
 @router.post("/status")
@@ -235,7 +237,8 @@ def update_operational_status(
     """
     Cambio de estado: "Disponible", "En Ruta", "En Pausa / Regulación", "Fuera de Servicio".
     """
-    update_driver_status(payload)
+    driver_name = user.get("fullname", "Conductor Oficial")
+    update_driver_status(payload, driver_name=driver_name)
     return {
         "status": "success",
         "message": f"Estado actualizado a: {payload.status.value}",

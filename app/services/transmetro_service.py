@@ -524,7 +524,7 @@ def init_tracker():
                 "sub_step": 0.0,
                 "speed_kmh": 0.0,
                 "occupancy": 0,
-                "driver_name": seed.get("driver_name", "Sin conductor"),
+                "driver_name": "Sin asignar",
                 "status": "Disponible",
                 "in_shift": False,
                 "manual_gps": False
@@ -619,7 +619,7 @@ def get_route_full_detail(route_id: str) -> Optional[RouteDetail]:
         buses=live_buses
     )
 
-def update_driver_gps(update: DriverGPSUpdate):
+def update_driver_gps(update: DriverGPSUpdate, driver_name: Optional[str] = None):
     if update.bus_id not in BUS_TRACKER_STATE:
         BUS_TRACKER_STATE[update.bus_id] = {
             "route_id": update.route_id,
@@ -628,7 +628,7 @@ def update_driver_gps(update: DriverGPSUpdate):
             "sub_step": 0.0,
             "speed_kmh": update.speed_kmh,
             "occupancy": update.occupancy_percent or 50,
-            "driver_name": "Conductor en Vivo",
+            "driver_name": driver_name or "Conductor en Vivo",
             "status": "En Ruta",
             "in_shift": True,
             "manual_gps": True
@@ -640,8 +640,10 @@ def update_driver_gps(update: DriverGPSUpdate):
     BUS_TRACKER_STATE[update.bus_id]["heading"] = update.heading
     BUS_TRACKER_STATE[update.bus_id]["occupancy"] = update.occupancy_percent
     BUS_TRACKER_STATE[update.bus_id]["manual_gps"] = True
+    if driver_name:
+        BUS_TRACKER_STATE[update.bus_id]["driver_name"] = driver_name
 
-def update_driver_status(state_change: DriverStateChange):
+def update_driver_status(state_change: DriverStateChange, driver_name: Optional[str] = None):
     if state_change.bus_id not in BUS_TRACKER_STATE:
         BUS_TRACKER_STATE[state_change.bus_id] = {
             "route_id": state_change.route_id,
@@ -650,7 +652,7 @@ def update_driver_status(state_change: DriverStateChange):
             "sub_step": 0.0,
             "speed_kmh": 0.0,
             "occupancy": 50,
-            "driver_name": "Conductor en Vivo",
+            "driver_name": driver_name or "Conductor en Vivo",
             "status": state_change.status.value,
             "in_shift": state_change.in_shift,
             "manual_gps": True
@@ -659,3 +661,5 @@ def update_driver_status(state_change: DriverStateChange):
         BUS_TRACKER_STATE[state_change.bus_id]["route_id"] = state_change.route_id
         BUS_TRACKER_STATE[state_change.bus_id]["status"] = state_change.status.value
         BUS_TRACKER_STATE[state_change.bus_id]["in_shift"] = state_change.in_shift
+        if driver_name:
+            BUS_TRACKER_STATE[state_change.bus_id]["driver_name"] = driver_name
