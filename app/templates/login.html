@@ -121,15 +121,6 @@
           </div>
         </div>
 
-        <!-- Indicador de seguridad JWT -->
-        <div class="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3 text-xs text-emerald-800 flex items-center gap-2.5">
-          <i class="fa-solid fa-shield-halved text-emerald-600 text-base"></i>
-          <div>
-            <p class="font-bold">Autenticación Segura con JWT</p>
-            <p class="text-emerald-600 text-[11px] mt-0.5">Tus credenciales se transmiten de forma cifrada y se almacenan como token seguro.</p>
-          </div>
-        </div>
-
         <button type="submit" id="btn-submit-login" class="w-full py-3 px-4 bg-transmetro hover:bg-transmetro-dark text-white font-bold rounded-xl shadow-lg shadow-transmetro/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01]">
           <span>Entrar al Sistema</span>
           <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -312,6 +303,11 @@
         if (!res.ok) throw new Error(data.detail || 'Error al iniciar sesión');
 
         showAlert(`¡Acceso concedido (${data.user.role.toUpperCase()})! Redireccionando...`, true);
+        
+        // Limpiar campos del formulario por privacidad y buenas prácticas
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+
         setTimeout(() => {
           window.location.href = data.redirect_url || '/';
         }, 700);
@@ -394,6 +390,13 @@
         if (!res.ok) throw new Error(data.detail || 'Error al registrar cuenta');
 
         showAlert("¡Cuenta creada con éxito! Redireccionando...", true);
+        
+        // Limpiar campos de registro por privacidad
+        document.getElementById('reg-fullname').value = '';
+        document.getElementById('reg-email').value = '';
+        document.getElementById('reg-password').value = '';
+        document.getElementById('reg-confirm-password').value = '';
+
         setTimeout(() => {
           window.location.href = data.redirect_url || '/mapa';
         }, 1000);
