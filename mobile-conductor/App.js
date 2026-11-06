@@ -16,7 +16,7 @@ import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOCATION_TASK_NAME = 'MOVIBAQ_BACKGROUND_GPS_TASK';
-const API_URL = 'https://movi-baq.vercel.app'; // URL en la nube Vercel
+const API_URL = 'https://movibaq.vercel.app'; // URL en la nube Vercel (100% real)
 
 // ==========================================
 // TAREA EN SEGUNDO PLANO (ESTILO INDRIVER/UBER)
