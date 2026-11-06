@@ -14,10 +14,23 @@
           "location",
           "fetch"
         ],
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "MoviBAQ requiere tu ubicación en segundo plano para transmitir la posición exacta de tu bus a los pasajeros durante todo tu turno.",
-        "NSLocationWhenInUseUsageDescription": "MoviBAQ necesita acceder a tu GPS para la navegación y seguimiento de ruta."
+        "NSLocationWhenInUseUsageDescription": "MoviBAQ necesita acceder a tu GPS para la navegación y seguimiento de ruta.",
+        "NSLocationAlwaysUsageDescription": "MoviBAQ requiere tu ubicación constante para emitir la telemetría en tiempo real de tu ruta a los pasajeros.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "MoviBAQ requiere tu ubicación en segundo plano para transmitir la posición exacta de tu bus a los pasajeros durante todo tu turno."
       }
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "MoviBAQ requiere tu ubicación en segundo plano para transmitir la posición exacta de tu bus a los pasajeros durante todo tu turno.",
+          "locationAlwaysPermission": "MoviBAQ requiere tu ubicación constante para emitir la telemetría en tiempo real de tu ruta a los pasajeros.",
+          "locationWhenInUsePermission": "MoviBAQ necesita acceder a tu GPS para la navegación y seguimiento de ruta.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ],
     "android": {
       "package": "com.movibaq.conductor",
       "adaptiveIcon": {

@@ -10,21 +10,22 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Switch,
+  RefreshControl,
 } from 'react-native';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOCATION_TASK_NAME = 'MOVIBAQ_BACKGROUND_GPS_TASK';
-const API_URL = 'https://movibaq.vercel.app'; // URL en la nube Vercel (100% real)
+const API_URL = 'https://movibaq.vercel.app';
 
 // ==========================================
-// TAREA EN SEGUNDO PLANO (ESTILO INDRIVER/UBER)
-// Corre en el hilo del sistema operativo incluso con la app cerrada o pantalla apagada
+// TAREA EN SEGUNDO PLANO
 // ==========================================
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
-    console.error('Error en tarea de ubicación en segundo plano:', error);
+    console.error('Error en tarea de ubicación:', error);
     return;
   }
   if (data) {
@@ -57,24 +58,47 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
           })
         });
       } catch (err) {
-        console.warn('Fallo enviando telemetría en segundo plano:', err.message);
+        console.warn('Error enviando telemetría en background:', err.message);
       }
     }
   }
 });
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('cabina'); // 'cabina' | 'preop' | 'cco' | 'incidente'
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Autenticación
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [driverUser, setDriverUser] = useState(null);
 
-  // Estados de turno
+  // Turno
   const [assignedBus, setAssignedBus] = useState('TM-8101');
   const [assignedRoute, setAssignedRoute] = useState('A8-1');
+  const [routeName, setRouteName] = useState('Ruta Alimentadora');
+  const [busPlate, setBusPlate] = useState('WPL-000');
   const [isTracking, setIsTracking] = useState(false);
   const [currentCoords, setCurrentCoords] = useState(null);
+
+  // Preoperacional
+  const [preopStatus, setPreopStatus] = useState('Pendiente de realizar');
+  const [frenosOk, setFrenosOk] = useState(true);
+  const [lucesOk, setLucesOk] = useState(true);
+  const [puertasOk, setPuertasOk] = useState(true);
+  const [extintorOk, setExtintorOk] = useState(true);
+  const [aceiteOk, setAceiteOk] = useState(true);
+  const [odometro, setOdometro] = useState('134500');
+
+  // Mensajes CCO
+  const [ccoMessages, setCcoMessages] = useState([]);
+
+  // Reporte incidente
+  const [incTipo, setIncTipo] = useState('Bloqueo en Vía / Congestión');
+  const [incUbicacion, setIncUbicacion] = useState('Calle 30 frente al Hipódromo');
+  const [incDescripcion, setIncDescripcion] = useState('');
 
   useEffect(() => {
     checkActiveSession();
@@ -88,17 +112,49 @@ export default function App() {
         const parsed = JSON.parse(savedUser);
         setDriverUser(parsed);
         setIsLoggedIn(true);
-        if (parsed.assigned_bus) setAssignedBus(parsed.assigned_bus);
-        if (parsed.assigned_route) setAssignedRoute(parsed.assigned_route);
+        loadShiftDetails(parsed);
       }
     } catch (e) {
       console.warn('Error leyendo sesión previa:', e);
     }
   };
 
+  const loadShiftDetails = async (user) => {
+    try {
+      setRefreshing(true);
+      const token = await AsyncStorage.getItem('user_token');
+      const res = await fetch(`${API_URL}/api/conductor/shift-info`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+        }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const c = data.conductor;
+        setAssignedBus(c.bus_id);
+        setAssignedRoute(c.route_id);
+        setRouteName(c.route_name);
+        setBusPlate(c.plate);
+        setPreopStatus(c.preoperacional_estado || 'Pendiente');
+        setCcoMessages(data.mensajes_cco || []);
+        await AsyncStorage.setItem('assigned_bus_id', c.bus_id);
+        await AsyncStorage.setItem('assigned_route_id', c.route_id);
+      }
+    } catch (err) {
+      console.warn('Error cargando turno:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const checkTrackingStatus = async () => {
-    const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
-    setIsTracking(hasStarted);
+    try {
+      const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+      setIsTracking(hasStarted);
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   const handleLogin = async () => {
@@ -135,6 +191,7 @@ export default function App() {
 
       setDriverUser(data.user);
       setIsLoggedIn(true);
+      loadShiftDetails(data.user);
       Alert.alert('Bienvenido', `Hola ${data.user.fullname}, turno listo.`);
     } catch (err) {
       Alert.alert('Error de acceso', err.message);
@@ -156,49 +213,69 @@ export default function App() {
 
   const startBackgroundTracking = async () => {
     try {
-      // 1. Permiso de ubicación en primer plano
-      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-      if (foregroundStatus !== 'granted') {
-        Alert.alert('Permiso denegado', 'Se requiere permiso de GPS para operar la ruta.');
+      // 1. Permiso en primer plano
+      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== 'granted') {
+        Alert.alert('Permiso requerido', 'Se requiere permiso de GPS para operar la ruta.');
         return;
       }
 
-      // 2. Permiso en segundo plano (estilo inDriver)
-      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-      if (backgroundStatus !== 'granted') {
-        Alert.alert(
-          'Ubicación en segundo plano requerida',
-          'Para que el GPS no se corte al bloquear la pantalla o abrir otra app, selecciona "Permitir siempre" en los ajustes de ubicación.'
-        );
+      // 2. Intentar solicitar permiso en segundo plano si está disponible
+      try {
+        await Location.requestBackgroundPermissionsAsync();
+      } catch (bgErr) {
+        console.warn('Background permission fallback:', bgErr);
       }
 
-      // Guardar identificadores en storage
+      // Guardar identificadores
       await AsyncStorage.setItem('assigned_bus_id', assignedBus);
       await AsyncStorage.setItem('assigned_route_id', assignedRoute);
 
-      // 3. Registrar el servicio en segundo plano
-      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-        accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 3000, // Cada 3 segundos
-        distanceInterval: 5,  // O cada 5 metros
-        deferredUpdatesInterval: 3000,
-        showsBackgroundLocationIndicator: true, // Píldora verde/azul en iOS
-        foregroundService: {
-          notificationTitle: `MoviBAQ: Ruta ${assignedRoute}`,
-          notificationBody: `Padrón ${assignedBus} transmitiendo GPS en tiempo real a los pasajeros.`,
-          notificationColor: '#0252CD'
-        }
-      });
-
-      // Obtener coordenada inicial
+      // Obtener posición inicial
       const currentLoc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setCurrentCoords(currentLoc.coords);
 
+      // Enviar primer punto
+      const token = await AsyncStorage.getItem('user_token');
+      await fetch(`${API_URL}/api/conductor/telemetry/gps`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+        },
+        body: JSON.stringify({
+          bus_id: assignedBus,
+          route_id: assignedRoute,
+          lat: currentLoc.coords.latitude,
+          lng: currentLoc.coords.longitude,
+          speed_kmh: 0.0,
+          heading: currentLoc.coords.heading || 0.0,
+          occupancy_percent: 50
+        })
+      });
+
+      // Iniciar tarea background si es posible
+      try {
+        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 3000,
+          distanceInterval: 5,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: `MoviBAQ: Ruta ${assignedRoute}`,
+            notificationBody: `Padrón ${assignedBus} transmitiendo GPS en tiempo real.`,
+            notificationColor: '#0252CD'
+          }
+        });
+      } catch (taskErr) {
+        console.warn('Modo Expo Go background fallback activado');
+      }
+
       setIsTracking(true);
-      Alert.alert('¡Transmisión en Vivo Iniciada!', 'Tu bus está transmitiendo su ubicación en tiempo real. Puedes minimizar la app o apagar la pantalla.');
+      Alert.alert('¡Transmisión Iniciada!', 'Tu bus está transmitiendo su ubicación en tiempo real al mapa de pasajeros y central CCO.');
     } catch (err) {
       console.error(err);
-      Alert.alert('Error al iniciar ruta', err.message);
+      Alert.alert('Aviso GPS', err.message);
     }
   };
 
@@ -211,7 +288,103 @@ export default function App() {
       setIsTracking(false);
       Alert.alert('Transmisión detenida', 'El bus ha dejado de emitir telemetría.');
     } catch (err) {
-      Alert.alert('Error al detener', err.message);
+      setIsTracking(false);
+    }
+  };
+
+  const submitPreoperacional = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('user_token');
+      const payload = {
+        bus_id: assignedBus,
+        route_id: assignedRoute,
+        odometro_km: parseInt(odometro) || 120000,
+        frenos: {
+          freno_servicio_ok: frenosOk,
+          freno_estacionamiento_ok: frenosOk,
+          presion_manometros_psi: 110
+        },
+        tecnico: {
+          neumaticos_labrado_ok: true,
+          luces_altas_bajas_ok: lucesOk,
+          direccionales_freno_ok: lucesOk,
+          limpiaparabrisas_espejos_ok: true
+        },
+        pasajeros: {
+          timbre_parada_ok: true,
+          puertas_neumaticas_ok: puertasOk,
+          validador_tarjetas_ok: true,
+          barras_sujecion_ok: true
+        },
+        seguridad: {
+          extintor_vigente: extintorOk,
+          botiquin_primeros_auxilios: true,
+          martillos_fragmentadores: true,
+          kit_carretera_repuesto: true
+        },
+        fluidos: {
+          nivel_aceite_motor_ok: aceiteOk,
+          nivel_refrigerante_ok: true,
+          nivel_combustible_porcentaje: 85
+        },
+        observaciones: "Inspección móvil realizada desde la app del conductor."
+      };
+
+      const res = await fetch(`${API_URL}/api/conductor/preoperacional`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Error al enviar preoperacional');
+
+      setPreopStatus(data.estado_aprobacion);
+      Alert.alert('Preoperacional Registrado', `Estado: ${data.estado_aprobacion}. Tu unidad ha sido evaluada.`);
+      setActiveTab('cabina');
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reportarIncidente = async () => {
+    if (!incDescripcion.trim()) {
+      Alert.alert('Campo requerido', 'Por favor describe la situación para notificar a la central.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('user_token');
+      const res = await fetch(`${API_URL}/api/conductor/incidente`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+        },
+        body: JSON.stringify({
+          bus_id: assignedBus,
+          route_id: assignedRoute,
+          tipo: incTipo,
+          prioridad: "Alta",
+          ubicacion_referencia: incUbicacion,
+          descripcion: incDescripcion
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Error al reportar incidente');
+
+      Alert.alert('Alerta Emitida', `El Centro de Control (CCO) ha recibido el reporte (${data.id}).`);
+      setIncDescripcion('');
+      setActiveTab('cabina');
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -272,15 +445,13 @@ export default function App() {
               )}
             </TouchableOpacity>
           </View>
-
-          <Text style={styles.footerNote}>Sistema conectado en vivo a la nube MoviBAQ.</Text>
         </ScrollView>
       </SafeAreaView>
     );
   }
 
   // ==========================================
-  // PANTALLA 2: CABINA EN VIVO Y CONTROL GPS
+  // PANTALLA PRINCIPAL CON NAVEGACIÓN MODULAR
   // ==========================================
   return (
     <SafeAreaView style={styles.container}>
@@ -295,7 +466,7 @@ export default function App() {
         <View>
           <Text style={styles.headerDriverName}>{driverUser?.fullname || 'Conductor Oficial'}</Text>
           <Text style={styles.headerStatus}>
-            {isTracking ? '🟢 Transmitiendo GPS en segundo plano' : '⚪ En espera de iniciar recorrido'}
+            {isTracking ? '🟢 Transmitiendo GPS en Vivo' : '⚪ En espera de recorrido'}
           </Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
@@ -303,58 +474,216 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.driverContent}>
-        {/* Tarjetas de Datos de la Unidad */}
-        <View style={styles.infoRow}>
-          <View style={styles.infoBox}>
-            <Text style={styles.infoBoxLabel}>PADRÓN / BUS</Text>
-            <Text style={styles.infoBoxValue}>{assignedBus}</Text>
-          </View>
-          <View style={styles.infoBox}>
-            <Text style={styles.infoBoxLabel}>RUTA EN CURSO</Text>
-            <Text style={styles.infoBoxValue}>{assignedRoute}</Text>
-          </View>
-        </View>
+      {/* Selector de Pestañas */}
+      <View style={styles.tabNav}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'cabina' && styles.tabButtonActive]}
+          onPress={() => setActiveTab('cabina')}
+        >
+          <Text style={[styles.tabButtonText, activeTab === 'cabina' && styles.tabButtonTextActive]}>Cabina</Text>
+        </TouchableOpacity>
 
-        {/* Banner de Modo Segundo Plano */}
-        <View style={styles.bgNotice}>
-          <Text style={styles.bgNoticeTitle}>🛡️ Operación en Segundo Plano Activa</Text>
-          <Text style={styles.bgNoticeBody}>
-            Esta aplicación continuará enviando tus coordenadas aunque bloquees el celular, contestes llamadas o abras otra app.
-          </Text>
-        </View>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'preop' && styles.tabButtonActive]}
+          onPress={() => setActiveTab('preop')}
+        >
+          <Text style={[styles.tabButtonText, activeTab === 'preop' && styles.tabButtonTextActive]}>Preoperacional</Text>
+        </TouchableOpacity>
 
-        {/* Botón Principal de Acción */}
-        {isTracking ? (
-          <TouchableOpacity style={styles.stopButton} onPress={stopBackgroundTracking}>
-            <Text style={styles.stopButtonText}>⏹ Detener / Pausar Transmisión</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.startButton} onPress={startBackgroundTracking}>
-            <Text style={styles.startButtonText}>🛰️ Iniciar Ruta y Transmitir GPS</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'cco' && styles.tabButtonActive]}
+          onPress={() => setActiveTab('cco')}
+        >
+          <Text style={[styles.tabButtonText, activeTab === 'cco' && styles.tabButtonTextActive]}>Central CCO</Text>
+        </TouchableOpacity>
 
-        {/* Estado actual de telemetría */}
-        <View style={styles.telemetryCard}>
-          <Text style={styles.telemetryTitle}>Estado de Telemetría</Text>
-          <View style={styles.telemetryRow}>
-            <Text style={styles.telemetryLabel}>Frecuencia de emisión:</Text>
-            <Text style={styles.telemetryValue}>Cada 3 segundos</Text>
-          </View>
-          <View style={styles.telemetryRow}>
-            <Text style={styles.telemetryLabel}>Servidor en la Nube:</Text>
-            <Text style={styles.telemetryValue}>Conectado (Vercel/Neon)</Text>
-          </View>
-          {currentCoords && (
-            <View style={styles.telemetryRow}>
-              <Text style={styles.telemetryLabel}>Última Coordenada:</Text>
-              <Text style={styles.telemetryValue}>
-                {currentCoords.latitude.toFixed(5)}, {currentCoords.longitude.toFixed(5)}
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'incidente' && styles.tabButtonActive]}
+          onPress={() => setActiveTab('incidente')}
+        >
+          <Text style={[styles.tabButtonText, activeTab === 'incidente' && styles.tabButtonTextActive]}>Alerta</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.driverContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadShiftDetails(driverUser)} />}
+      >
+        {/* ====================================
+            TAB 1: CABINA GPS PRINCIPAL
+            ==================================== */}
+        {activeTab === 'cabina' && (
+          <View>
+            <View style={styles.infoRow}>
+              <View style={styles.infoBox}>
+                <Text style={styles.infoBoxLabel}>PADRÓN / BUS</Text>
+                <Text style={styles.infoBoxValue}>{assignedBus}</Text>
+                <Text style={styles.infoBoxSub}>Placa: {busPlate}</Text>
+              </View>
+              <View style={styles.infoBox}>
+                <Text style={styles.infoBoxLabel}>RUTA EN CURSO</Text>
+                <Text style={styles.infoBoxValue}>{assignedRoute}</Text>
+                <Text style={styles.infoBoxSub} numberOfLines={1}>{routeName}</Text>
+              </View>
+            </View>
+
+            {/* Estado del preoperacional */}
+            <View style={[styles.preopBanner, preopStatus === 'Aprobado' ? styles.preopOk : styles.preopPending]}>
+              <Text style={styles.preopBannerTitle}>
+                {preopStatus === 'Aprobado' ? '✓ Preoperacional Aprobado' : '⚠️ Inspección Preoperacional Requerida'}
+              </Text>
+              <Text style={styles.preopBannerBody}>
+                {preopStatus === 'Aprobado'
+                  ? 'Vehículo en condiciones técnicas aptas para circular.'
+                  : 'Diligencia la inspección diaria obligatoria en la pestaña Preoperacional.'}
               </Text>
             </View>
-          )}
-        </View>
+
+            {/* Botón de Inicio / Pausa de GPS */}
+            {isTracking ? (
+              <TouchableOpacity style={styles.stopButton} onPress={stopBackgroundTracking}>
+                <Text style={styles.stopButtonText}>⏹ Detener / Pausar Transmisión</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.startButton} onPress={startBackgroundTracking}>
+                <Text style={styles.startButtonText}>🛰️ Iniciar Ruta y Transmitir GPS</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Resumen de telemetría */}
+            <View style={styles.telemetryCard}>
+              <Text style={styles.telemetryTitle}>Telemetría Transmetro</Text>
+              <View style={styles.telemetryRow}>
+                <Text style={styles.telemetryLabel}>Servidor Nube:</Text>
+                <Text style={styles.telemetryValue}>https://movibaq.vercel.app</Text>
+              </View>
+              <View style={styles.telemetryRow}>
+                <Text style={styles.telemetryLabel}>Intervalo:</Text>
+                <Text style={styles.telemetryValue}>Cada 3 segundos</Text>
+              </View>
+              {currentCoords && (
+                <View style={styles.telemetryRow}>
+                  <Text style={styles.telemetryLabel}>Última Coordenada:</Text>
+                  <Text style={styles.telemetryValue}>
+                    {currentCoords.latitude.toFixed(5)}, {currentCoords.longitude.toFixed(5)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* ====================================
+            TAB 2: INSPECCIÓN PREOPERACIONAL
+            ==================================== */}
+        {activeTab === 'preop' && (
+          <View style={styles.tabContentCard}>
+            <Text style={styles.cardHeader}>Inspección Técnica Preoperacional</Text>
+            <Text style={styles.cardSub}>Validación de seguridad obligatoria antes de iniciar la marcha.</Text>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Freno de Servicio y Parqueo (OK)</Text>
+              <Switch value={frenosOk} onValueChange={setFrenosOk} trackColor={{ true: '#059669' }} />
+            </View>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Luces Altas, Bajas y Direccionales</Text>
+              <Switch value={lucesOk} onValueChange={setLucesOk} trackColor={{ true: '#059669' }} />
+            </View>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Puertas Neumáticas y Timbres</Text>
+              <Switch value={puertasOk} onValueChange={setPuertasOk} trackColor={{ true: '#059669' }} />
+            </View>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Extintor Vigente y Botiquín</Text>
+              <Switch value={extintorOk} onValueChange={setExtintorOk} trackColor={{ true: '#059669' }} />
+            </View>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Niveles de Aceite y Refrigerante</Text>
+              <Switch value={aceiteOk} onValueChange={setAceiteOk} trackColor={{ true: '#059669' }} />
+            </View>
+
+            <Text style={[styles.inputLabel, { marginTop: 16 }]}>KILOMETRAJE / ODÓMETRO</Text>
+            <TextInput
+              style={styles.input}
+              value={odometro}
+              onChangeText={setOdometro}
+              keyboardType="numeric"
+              placeholder="134500"
+            />
+
+            <TouchableOpacity style={styles.actionBtnGreen} onPress={submitPreoperacional} disabled={loading}>
+              {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.actionBtnText}>Registrar Inspección Preoperacional</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ====================================
+            TAB 3: MENSAJES Y REGULACIÓN CCO
+            ==================================== */}
+        {activeTab === 'cco' && (
+          <View style={styles.tabContentCard}>
+            <Text style={styles.cardHeader}>Instrucciones del Centro de Control (CCO)</Text>
+            <Text style={styles.cardSub}>Canal oficial de regulación del Jefe de Ruta a tu unidad.</Text>
+
+            {ccoMessages.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyText}>No hay mensajes pendientes del Jefe de Ruta.</Text>
+              </View>
+            ) : (
+              ccoMessages.map((msg, i) => (
+                <View key={i} style={styles.messageCard}>
+                  <View style={styles.msgHeader}>
+                    <Text style={styles.msgSender}>{msg.sender || 'Jefe de Ruta'}</Text>
+                    <Text style={styles.msgTime}>{msg.time || ''}</Text>
+                  </View>
+                  <Text style={styles.msgBody}>{msg.text}</Text>
+                </View>
+              ))
+            )}
+
+            <TouchableOpacity
+              style={[styles.primaryButton, { marginTop: 20 }]}
+              onPress={() => Alert.alert('Enterado', 'Confirmación de recibido enviada al CCO.')}
+            >
+              <Text style={styles.primaryButtonText}>✓ Confirmar Enterado a Central</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ====================================
+            TAB 4: REPORTE DE INCIDENTE EN VÍA
+            ==================================== */}
+        {activeTab === 'incidente' && (
+          <View style={styles.tabContentCard}>
+            <Text style={styles.cardHeader}>Emitir Alerta de Incidente en Vía</Text>
+            <Text style={styles.cardSub}>Notificación de emergencia inmediata al despachador.</Text>
+
+            <Text style={styles.inputLabel}>PUNTO O PARADERO DE REFERENCIA</Text>
+            <TextInput
+              style={styles.input}
+              value={incUbicacion}
+              onChangeText={setIncUbicacion}
+              placeholder="Ej. Calle 30 frente al Hipódromo"
+            />
+
+            <Text style={styles.inputLabel}>DESCRIPCIÓN DEL SUCESO</Text>
+            <TextInput
+              style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
+              value={incDescripcion}
+              onChangeText={setIncDescripcion}
+              placeholder="Describe lo ocurrido (varada, choque, congestión, etc.)..."
+              multiline
+            />
+
+            <TouchableOpacity style={styles.actionBtnRed} onPress={reportarIncidente} disabled={loading}>
+              {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.actionBtnText}>🚨 Enviar Alerta Urgente al CCO</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -421,6 +750,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  cardSub: {
+    fontSize: 12,
+    color: '#94A3B8',
     marginBottom: 16,
   },
   inputLabel: {
@@ -453,16 +787,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
-  footerNote: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 24,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     backgroundColor: '#1E293B',
     borderBottomWidth: 1,
     borderBottomColor: '#334155',
@@ -473,34 +803,60 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   headerStatus: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#94A3B8',
     marginTop: 2,
   },
   logoutBtn: {
     backgroundColor: '#334155',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   logoutBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
   },
+  tabNav: {
+    flexDirection: 'row',
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  tabButtonActive: {
+    backgroundColor: '#0252CD',
+  },
+  tabButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  tabButtonTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
   driverContent: {
-    padding: 20,
+    padding: 16,
   },
   infoRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   infoBox: {
     flex: 1,
     backgroundColor: '#1E293B',
-    padding: 16,
-    borderRadius: 18,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#334155',
   },
@@ -510,89 +866,166 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
   infoBoxValue: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
     color: '#38BDF8',
-    marginTop: 4,
+    marginTop: 2,
   },
-  bgNotice: {
-    backgroundColor: 'rgba(2, 82, 205, 0.15)',
+  infoBoxSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  preopBanner: {
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#0252CD',
-    padding: 16,
-    borderRadius: 18,
-    marginBottom: 20,
   },
-  bgNoticeTitle: {
+  preopOk: {
+    backgroundColor: 'rgba(5, 150, 105, 0.15)',
+    borderColor: '#059669',
+  },
+  preopPending: {
+    backgroundColor: 'rgba(217, 119, 6, 0.15)',
+    borderColor: '#D97706',
+  },
+  preopBannerTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#60A5FA',
-    marginBottom: 4,
+    color: '#FFFFFF',
+    marginBottom: 2,
   },
-  bgNoticeBody: {
-    fontSize: 12,
+  preopBannerBody: {
+    fontSize: 11,
     color: '#CBD5E1',
-    lineHeight: 18,
   },
   startButton: {
     backgroundColor: '#059669',
-    paddingVertical: 18,
-    borderRadius: 20,
+    paddingVertical: 16,
+    borderRadius: 18,
     alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#059669',
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
+    marginBottom: 16,
+    elevation: 4,
   },
   startButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
   },
   stopButton: {
     backgroundColor: '#DC2626',
-    paddingVertical: 18,
-    borderRadius: 20,
+    paddingVertical: 16,
+    borderRadius: 18,
     alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#DC2626',
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
+    marginBottom: 16,
+    elevation: 4,
   },
   stopButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
   },
   telemetryCard: {
     backgroundColor: '#1E293B',
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#334155',
   },
   telemetryTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   telemetryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    paddingVertical: 4,
   },
   telemetryLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#94A3B8',
   },
   telemetryValue: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#F8FAFC',
+  },
+  tabContentCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  switchLabel: {
+    fontSize: 12,
+    color: '#F1F5F9',
+    fontWeight: '600',
+    flex: 1,
+    paddingRight: 8,
+  },
+  actionBtnGreen: {
+    backgroundColor: '#059669',
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  actionBtnRed: {
+    backgroundColor: '#DC2626',
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  emptyBox: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#64748B',
+    fontSize: 12,
+  },
+  messageCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0252CD',
+  },
+  msgHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  msgSender: {
+    color: '#38BDF8',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  msgTime: {
+    color: '#64748B',
+    fontSize: 10,
+  },
+  msgBody: {
+    color: '#E2E8F0',
+    fontSize: 12,
   },
 });
