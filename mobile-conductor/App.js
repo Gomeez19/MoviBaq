@@ -45,7 +45,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(storedToken ? { 'Cookie': `access_token=${storedToken}` } : {})
+            ...(storedToken ? { 'Authorization': `Bearer ${storedToken}`, 'Cookie': `access_token=${storedToken}` } : {})
           },
           body: JSON.stringify({
             bus_id: busId,
@@ -126,7 +126,7 @@ export default function App() {
       const res = await fetch(`${API_URL}/api/conductor/shift-info`, {
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+          ...(token ? { 'Authorization': `Bearer ${token}`, 'Cookie': `access_token=${token}` } : {})
         }
       });
       const data = await res.json();
@@ -241,7 +241,7 @@ export default function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+          ...(token ? { 'Authorization': `Bearer ${token}`, 'Cookie': `access_token=${token}` } : {})
         },
         body: JSON.stringify({
           bus_id: assignedBus,
@@ -335,7 +335,7 @@ export default function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+          ...(token ? { 'Authorization': `Bearer ${token}`, 'Cookie': `access_token=${token}` } : {})
         },
         body: JSON.stringify(payload)
       });
@@ -364,7 +364,7 @@ export default function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Cookie': `access_token=${token}` } : {})
+          ...(token ? { 'Authorization': `Bearer ${token}`, 'Cookie': `access_token=${token}` } : {})
         },
         body: JSON.stringify({
           bus_id: assignedBus,

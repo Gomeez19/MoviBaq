@@ -222,11 +222,45 @@ def send_driver_gps(
 ):
     """
     Envío real de coordenadas GPS emitidas por el smartphone/tablet del conductor autenticado.
-    Actualiza la ubicación vista en tiempo real por pasajeros y jefe de ruta,
-    asociando el nombre real del conductor autenticado.
+    Actualiza la ubicación en memoria y en la base de datos PostgreSQL Neon en tiempo real.
     """
     driver_name = user.get("fullname", "Conductor Oficial")
     update_driver_gps(payload, driver_name=driver_name)
+
+    # Persistir telemetría en Neon PostgreSQL para sincronización multi-instancia Vercel
+    try:
+        from app.database import SessionLocal
+        from app.models import TelemetriaEnVivo
+        if SessionLocal:
+            db = SessionLocal()
+            try:
+                db_telemetry = db.query(TelemetriaEnVivo).filter(TelemetriaEnVivo.bus_id == payload.bus_id).first()
+                if not db_telemetry:
+                    db_telemetry = TelemetriaEnVivo(
+                        bus_id=payload.bus_id,
+                        route_id=payload.route_id,
+                        driver_id=user["id"],
+                        lat=payload.lat,
+                        lng=payload.lng,
+                        speed_kmh=payload.speed_kmh,
+                        heading=payload.heading,
+                        occupancy_percent=payload.occupancy_percent or 50
+                    )
+                    db.add(db_telemetry)
+                else:
+                    db_telemetry.route_id = payload.route_id
+                    db_telemetry.driver_id = user["id"]
+                    db_telemetry.lat = payload.lat
+                    db_telemetry.lng = payload.lng
+                    db_telemetry.speed_kmh = payload.speed_kmh
+                    db_telemetry.heading = payload.heading
+                    db_telemetry.occupancy_percent = payload.occupancy_percent or 50
+                db.commit()
+            finally:
+                db.close()
+    except Exception as db_err:
+        print(f"[Telemetry BD Neon Error]: {db_err}")
+
     return {"status": "success", "message": "Telemetría GPS actualizada"}
 
 @router.post("/status")

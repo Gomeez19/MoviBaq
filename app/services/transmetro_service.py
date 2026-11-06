@@ -552,17 +552,71 @@ def get_all_routes_summary() -> List[dict]:
 def step_bus_simulation(route_id: Optional[str] = None) -> List[BusLiveStatus]:
     """
     Retorna la telemetría GPS de los buses.
-    MODO PRUEBA REAL: Únicamente retorna buses que tengan transmisión GPS activa (manual_gps == True),
-    es decir, conducidos por usuarios reales con su smartphone/equipo transmitiendo.
-    Si nadie está transmitiendo en una ruta, no se inventa ningún bus simulado.
+    MODO PRUEBA REAL:
+    1. Lee primero la telemetría en vivo sincronizada en PostgreSQL Neon (compartida entre Vercel lambdas).
+    2. Sincroniza con la memoria local BUS_TRACKER_STATE.
+    Únicamente retorna buses con transmisión activa (manual_gps == True).
     """
     results: List[BusLiveStatus] = []
     
+    # 1. Sincronizar desde la BD Neon para compartir telemetría entre peticiones de Vercel
+    try:
+        from app.database import SessionLocal
+        from app.models import TelemetriaEnVivo, Usuario, Vehiculo
+        if SessionLocal:
+            db = SessionLocal()
+            try:
+                db_buses = db.query(TelemetriaEnVivo).all()
+                for tb in db_buses:
+                    if route_id and tb.route_id != route_id:
+                        continue
+                    
+                    # Conductor
+                    d_name = "Conductor Oficial"
+                    if tb.driver_id:
+                        d_user = db.query(Usuario).filter(Usuario.id == tb.driver_id).first()
+                        if d_user:
+                            d_name = d_user.fullname
+                    
+                    # Placa
+                    bus_plate = "WPL-000"
+                    v = db.query(Vehiculo).filter(Vehiculo.bus_id == tb.bus_id).first()
+                    if v:
+                        bus_plate = v.plate
+
+                    route = MOCK_ROUTES.get(tb.route_id)
+                    stops = route["stops"] if route else []
+                    nearest_stop = stops[0]["name"] if stops else "En recorrido"
+                    speed = float(tb.speed_kmh or 0.0)
+
+                    results.append(BusLiveStatus(
+                        bus_id=tb.bus_id,
+                        plate=bus_plate,
+                        current_lat=float(tb.lat),
+                        current_lng=float(tb.lng),
+                        speed_kmh=speed,
+                        next_stop=nearest_stop,
+                        eta_minutes=max(1, int(15 - min(14, speed / 4))),
+                        distance_meters=int(max(100, 1500 - min(1400, speed * 25))),
+                        status="En Ruta",
+                        occupancy_percent=tb.occupancy_percent or 50,
+                        heading=float(tb.heading or 0.0),
+                        driver_name=d_name
+                    ))
+            finally:
+                db.close()
+    except Exception as e:
+        print(f"[step_bus_simulation BD Error]: {e}")
+
+    # Si encontramos buses en BD Neon, retornarlos de inmediato
+    if results:
+        return results
+
+    # 2. Si no hay en BD o error, fallback a memoria local
     for bus_id, state in BUS_TRACKER_STATE.items():
         if route_id and state["route_id"] != route_id:
             continue
 
-        # Solo incluir buses que tengan coordenadas reales y estén transmitiendo
         if not state.get("manual_gps", False):
             continue
             

@@ -129,10 +129,19 @@ MOCK_USERS_DB: Dict[str, dict] = {
 
 def get_current_user_optional(request: Request) -> dict | None:
     """
-    Extrae el usuario actual a partir de un token JWT almacenado en la cookie 'access_token'.
+    Extrae el usuario actual a partir de:
+    1. Header Authorization: Bearer <token> (Ideal para App Móvil)
+    2. Cookie 'access_token' (Para Navegador Web)
     Retorna None si no hay token o si es inválido/expirado.
     """
-    token = request.cookies.get("access_token")
+    token = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    
+    if not token:
+        token = request.cookies.get("access_token")
+
     if not token:
         return None
 
