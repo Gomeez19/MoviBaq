@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "MoviBAQ Conductor",
+    "slug": "movibaq-conductor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.movibaq.conductor",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "MoviBAQ requiere tu ubicación en segundo plano para transmitir la posición exacta de tu bus a los pasajeros durante todo tu turno.",
+        "NSLocationWhenInUseUsageDescription": "MoviBAQ necesita acceder a tu GPS para la navegación y seguimiento de ruta."
+      }
+    },
+    "android": {
+      "package": "com.movibaq.conductor",
+      "adaptiveIcon": {
+        "backgroundColor": "#0252CD",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "WAKE_LOCK"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
